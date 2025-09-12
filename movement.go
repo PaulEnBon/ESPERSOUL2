@@ -10,15 +10,7 @@ import (
 // map de salles : relie un nom à une salle
 var salles = map[string][][]int{
 	"salle1": salle1,
-	"salle2": salle2, // salle2 must be defined below
-}
-
-// Define salle2 as a 2D slice of integers
-var salle2 = [][]int{
-	{9, 9, 9, 9, 9},
-	{9, 0, 0, 7, 9},
-	{9, 0, 1, 0, 9},
-	{9, 9, 9, 9, 9},
+	"salle2": salle2,
 }
 
 // map de transitions : quand on marche sur une porte
@@ -81,7 +73,7 @@ func RunGameLoop(mapData [][]int, currentMap string) {
 	}
 }
 
-// printMap affiche la salle
+// printMap affiche la salle avec rendu aligné
 func printMap(mapData [][]int) {
 	fmt.Print("\033[H\033[2J")
 	for _, row := range mapData {
@@ -94,9 +86,9 @@ func printMap(mapData [][]int) {
 			case 7:
 				fmt.Print(" ↑ ")
 			case 1:
-				fmt.Print("💩 ")
+				fmt.Print("💩 ") // joueur, 3 colonnes
 			case 2:
-				fmt.Print("😈 ")
+				fmt.Print("😈 ") // ennemi, 3 colonnes
 			case 0:
 				fmt.Print(" • ")
 			default:
