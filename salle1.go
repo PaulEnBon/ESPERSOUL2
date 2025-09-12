@@ -1,7 +1,7 @@
 package main
 
-// salle1 représente la première salle du jeu
-var salle1 = [7][17]int{
+// salle1 en version slice 2D ([][]int) → taille flexible
+var salle1 = [][]int{
 	{9, 9, 9, 9, 9, 9, 9, 9, 7, 9, 9, 9, 9, 9, 9, 9, 9},
 	{9, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 9},
 	{9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9},
@@ -11,7 +11,7 @@ var salle1 = [7][17]int{
 	{9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9},
 }
 
-// StartSalle1 lance la boucle de jeu de cette salle
+// StartSalle1 lance la boucle de jeu avec cette map
 func StartSalle1() {
-	RunGameLoop(&salle1) // Appelle la boucle définie dans movement.go
+	RunGameLoop(salle1)
 }

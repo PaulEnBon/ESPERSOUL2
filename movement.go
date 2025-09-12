@@ -8,7 +8,7 @@ import (
 )
 
 // RunGameLoop gère les déplacements du joueur et l'affichage
-func RunGameLoop(mapData *[7][17]int) {
+func RunGameLoop(mapData [][]int) {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
@@ -37,20 +37,23 @@ func RunGameLoop(mapData *[7][17]int) {
 			fmt.Println("Touche inconnue.")
 		}
 
-		// Vérifie que la case n'est pas un mur avant de bouger
-		if (*mapData)[newY][newX] != 9 {
-			if (*mapData)[newY][newX] == 2 {
-				fmt.Println("💥 MESSIR, UN SARRAZIN ! 💥")
-			}
+		// Vérifie les limites de la map avant de bouger
+		if newY >= 0 && newY < len(mapData) && newX >= 0 && newX < len(mapData[0]) {
+			// Vérifie que la case n'est pas un mur
+			if mapData[newY][newX] != 9 {
+				if mapData[newY][newX] == 2 {
+					fmt.Println("💥 MESSIR,UN SARAZIN ! 💥")
+				}
 
-			(*mapData)[py][px] = 0
-			(*mapData)[newY][newX] = 1
+				mapData[py][px] = 0
+				mapData[newY][newX] = 1
+			}
 		}
 	}
 }
 
 // printMap affiche la salle dans le terminal
-func printMap(mapData *[7][17]int) {
+func printMap(mapData [][]int) {
 	fmt.Print("\033[H\033[2J") // Efface l'écran avant chaque affichage
 	for _, row := range mapData {
 		for _, val := range row {
@@ -77,10 +80,10 @@ func printMap(mapData *[7][17]int) {
 }
 
 // findPlayer retourne la position du joueur (x, y)
-func findPlayer(mapData *[7][17]int) (int, int) {
+func findPlayer(mapData [][]int) (int, int) {
 	for y := 0; y < len(mapData); y++ {
 		for x := 0; x < len(mapData[y]); x++ {
-			if (*mapData)[y][x] == 1 {
+			if mapData[y][x] == 1 {
 				return x, y
 			}
 		}
