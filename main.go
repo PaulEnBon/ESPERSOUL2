@@ -1,7 +1,9 @@
 package main
 
 func main() {
-	// On lance la salle 1
+	// Affiche l'écran de départ
 	Ecrant_de_départ()
-	RunGameLoopSafe() // fonction sécurisée dans movement.go
+
+	// Démarre ensuite le jeu
+	RunGameLoop(salle1, "salle1", "")
 }

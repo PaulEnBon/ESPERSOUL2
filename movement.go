@@ -7,40 +7,31 @@ import (
 	"strings"
 )
 
-// --- Types ---
-type Spawn struct{ X, Y int }
-type Door struct {
-	NextMap string
-	SpawnX  int
-	SpawnY  int
-}
-
-// --- Portes par salle ---
-var doors = map[string]map[[2]int]Door{
-	"salle1": {
-		{8, 0}: {"salle2", 2, 7}, // porte haut salle1 → spawn salle2 X=2,Y=7
-	},
-	"salle2": {
-		{2, 0}: {"salle3", 8, 13}, // porte haut salle2 → spawn salle3
-		{2, 8}: {"salle3", 8, 1},  // porte bas salle2 → spawn salle3
-	},
-	"salle3": {
-		{8, 0}: {"salle4", 8, 13}, // future salle4
-	},
-}
-
-// --- Map des salles ---
+// map des salles
 var salles = map[string][][]int{
 	"salle1": salle1,
 	"salle2": salle2,
 	"salle3": salle3,
 }
 
-// --- Boucle principale ---
-func RunGameLoopSafe() {
-	currentMap := "salle1"
-	mapData := copyMap(salles[currentMap])
+// transitions par porte : 7=haut, 10=bas
+var transitions = map[string]map[int]string{
+	"salle1": {7: "salle2"},
+	"salle2": {7: "salle3", 10: "salle1"},
+	"salle3": {10: "salle2"},
+}
+
+// RunGameLoop gère le jeu, les déplacements et les transitions
+func RunGameLoop(mapData [][]int, currentMap string, cameFrom string) {
 	reader := bufio.NewReader(os.Stdin)
+
+	// spawn automatique si on revient d'une salle précédente
+	if cameFrom != "" {
+		spawnX, spawnY := findSpawn(mapData)
+		if spawnX != -1 && spawnY != -1 {
+			placePlayerAt(mapData, spawnX, spawnY)
+		}
+	}
 
 	for {
 		printMap(mapData)
@@ -69,46 +60,79 @@ func RunGameLoopSafe() {
 			continue
 		}
 
-		if newY >= 0 && newY < len(mapData) && newX >= 0 && newX < len(mapData[0]) {
-			switch mapData[newY][newX] {
-			case 9: // mur
-				continue
-			case 2: // ennemi
-				fmt.Println("💥 Vous avez rencontré un ennemi !")
-			case 7, 10: // porte haut/bas
-				if door, ok := doors[currentMap][[2]int{newX, newY}]; ok {
-					fmt.Println("🚪 Vous passez dans la salle suivante...")
-					currentMap = door.NextMap
-					mapData = copyMap(salles[currentMap])
-					// Spawn sécurisé
-					if door.SpawnX >= 0 && door.SpawnX < len(mapData[0]) &&
-						door.SpawnY >= 0 && door.SpawnY < len(mapData) {
-						placePlayerAt(mapData, door.SpawnX, door.SpawnY)
-					} else {
-						c := centerSpawn(mapData)
-						placePlayerAt(mapData, c.X, c.Y)
-					}
-					continue
-				} else {
-					fmt.Println("Porte inconnue.")
-				}
-			}
-
-			// Déplacement normal
-			mapData[py][px] = 0
-			mapData[newY][newX] = 1
+		// vérifier bornes
+		if newY < 0 || newY >= len(mapData) || newX < 0 || newX >= len(mapData[0]) {
+			continue
 		}
+
+		cell := mapData[newY][newX]
+
+		switch cell {
+		case 9: // mur
+			continue
+		case 2: // ennemi
+			fmt.Println("💥 Vous avez rencontré un ennemi !")
+		case 7, 10: // porte haut ou bas
+			nextMap := transitions[currentMap][cell]
+			if nextMap != "" {
+				nextMapData := salles[nextMap]
+
+				// ajuster newX si la salle suivante est plus petite
+				if newX >= len(nextMapData[0]) {
+					newX = len(nextMapData[0]) - 2
+				} else if newX <= 0 {
+					newX = 1
+				}
+
+				// spawn dynamique : chercher case 11
+				spawnX, spawnY := findSpawn(nextMapData)
+				if spawnX != -1 && spawnY != -1 {
+					placePlayerAt(nextMapData, spawnX, spawnY)
+				} else {
+					// fallback : spawn bas ou haut selon porte
+					switch currentMap + "->" + nextMap {
+					case "salle1->salle2", "salle2->salle3":
+						// on monte → spawn en bas de la salle suivante
+						placePlayerAt(nextMapData, newX, len(nextMapData)-2)
+					case "salle3->salle2", "salle2->salle1":
+						// on descend → spawn en haut de la salle suivante
+						placePlayerAt(nextMapData, newX, 1)
+					default:
+						if cell == 7 {
+							placePlayerAt(nextMapData, newX, newY+1)
+						} else {
+							placePlayerAt(nextMapData, newX, newY-1)
+						}
+					}
+				}
+
+				RunGameLoop(nextMapData, nextMap, currentMap)
+				return
+			} else {
+				fmt.Println("✅ Vous avez fini le donjon !")
+				return
+			}
+		}
+
+		// déplacement normal
+		mapData[py][px] = 0
+		mapData[newY][newX] = 1
 	}
 }
 
-// --- Spawn au centre ---
-func centerSpawn(mapData [][]int) (s Spawn) {
-	s.X = len(mapData[0]) / 2
-	s.Y = len(mapData) / 2
-	return
+// findSpawn retourne les coordonnées de la case 11
+func findSpawn(mapData [][]int) (int, int) {
+	for y := 0; y < len(mapData); y++ {
+		for x := 0; x < len(mapData[y]); x++ {
+			if mapData[y][x] == 11 {
+				return x, y
+			}
+		}
+	}
+	return -1, -1
 }
 
-// --- Affichage ---
+// printMap affiche la salle
 func printMap(mapData [][]int) {
 	fmt.Print("\033[H\033[2J")
 	for _, row := range mapData {
@@ -126,6 +150,8 @@ func printMap(mapData [][]int) {
 				fmt.Print("💩 ")
 			case 2:
 				fmt.Print("😈 ")
+			case 11:
+				fmt.Print(" • ") // invisible, juste pour spawn dynamique
 			case 0:
 				fmt.Print(" • ")
 			default:
@@ -137,7 +163,7 @@ func printMap(mapData [][]int) {
 	fmt.Println()
 }
 
-// --- Utilitaires ---
+// findPlayer retourne la position du joueur
 func findPlayer(mapData [][]int) (int, int) {
 	for y := 0; y < len(mapData); y++ {
 		for x := 0; x < len(mapData[y]); x++ {
@@ -149,6 +175,7 @@ func findPlayer(mapData [][]int) (int, int) {
 	return -1, -1
 }
 
+// placePlayerAt place le joueur à une position spécifique
 func placePlayerAt(mapData [][]int, x, y int) {
 	for row := range mapData {
 		for col := range mapData[row] {
@@ -158,13 +185,4 @@ func placePlayerAt(mapData [][]int, x, y int) {
 		}
 	}
 	mapData[y][x] = 1
-}
-
-func copyMap(original [][]int) [][]int {
-	cpy := make([][]int, len(original))
-	for i := range original {
-		cpy[i] = make([]int, len(original[i]))
-		copy(cpy[i], original[i])
-	}
-	return cpy
 }
