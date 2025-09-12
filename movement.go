@@ -9,22 +9,14 @@ import (
 
 // map de salles : relie un nom à une salle
 var salles = map[string][][]int{
-	"salle1": salle1,
-	"salle2": salle2, // salle2 must be defined below
-}
-
-// Define salle2 as a 2D slice of integers
-var salle2 = [][]int{
-	{9, 9, 9, 9, 9},
-	{9, 0, 0, 7, 9},
-	{9, 0, 1, 0, 9},
-	{9, 9, 9, 9, 9},
+	"salle1":              salle1,
+	"CouloirSalle1toMain": CouloirSalle1toMain, // salle2 must be defined below
 }
 
 // map de transitions : quand on marche sur une porte
 var transitions = map[string]string{
-	"salle1": "salle2",
-	"salle2": "", // fin du donjon
+	"salle1":              "CouloirSalle1toMain",
+	"CouloirSalle1toMain": "", // fin du donjon
 }
 
 // RunGameLoop gère les déplacements et l'affichage
