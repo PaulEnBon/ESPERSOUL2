@@ -81,6 +81,8 @@ func printMap(mapData [][]int) {
 			switch val {
 			case 8:
 				fmt.Print(" ๑ ")
+			case 10:
+				fmt.Print(" ↓ ")
 			case 9:
 				fmt.Print(" ▨ ")
 			case 7:
