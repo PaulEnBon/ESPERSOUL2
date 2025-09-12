@@ -4,7 +4,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-func main() {
+func Création_du_perssonnage() {
 
 	PhotoPlaceholder := tview.NewTextView().
 		SetText("kitten icat image.jpeg").
