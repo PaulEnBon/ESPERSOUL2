@@ -1,5 +1,6 @@
 package main
 
 func main() {
-	Salle1()
+	// Lance la boucle de jeu sur la salle 1
+	StartSalle1()
 }
