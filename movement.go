@@ -59,7 +59,9 @@ func RunGameLoop(mapData [][]int, currentMap string) {
 				fmt.Println("🚪 Vous passez dans la salle suivante...")
 				nextMap := transitions[currentMap]
 				if nextMap != "" {
-					RunGameLoop(salles[nextMap], nextMap)
+					nextMapData := salles[nextMap]
+					placePlayerAt(nextMapData, 2, 7)
+					RunGameLoop(nextMapData, nextMap)
 				} else {
 					fmt.Println("✅ Vous avez fini le donjon !")
 				}
@@ -112,4 +114,16 @@ func findPlayer(mapData [][]int) (int, int) {
 		}
 	}
 	return -1, -1
+}
+
+// placePlayerAt place le joueur à une position spécifique
+func placePlayerAt(mapData [][]int, x, y int) {
+	for row := range mapData {
+		for col := range mapData[row] {
+			if mapData[row][col] == 1 {
+				mapData[row][col] = 0 // efface le joueur actuel
+			}
+		}
+	}
+	mapData[y][x] = 1
 }
