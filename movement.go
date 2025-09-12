@@ -7,20 +7,39 @@ import (
 	"strings"
 )
 
-// map de salles : relie un nom à une salle
+// --- Types ---
+type Spawn struct{ X, Y int }
+type Door struct {
+	NextMap string
+	SpawnX  int
+	SpawnY  int
+}
+
+// --- Portes par salle ---
+var doors = map[string]map[[2]int]Door{
+	"salle1": {
+		{8, 0}: {"salle2", 2, 7}, // porte haut salle1 → spawn salle2 X=2,Y=7
+	},
+	"salle2": {
+		{2, 0}: {"salle3", 8, 13}, // porte haut salle2 → spawn salle3
+		{2, 8}: {"salle3", 8, 1},  // porte bas salle2 → spawn salle3
+	},
+	"salle3": {
+		{8, 0}: {"salle4", 8, 13}, // future salle4
+	},
+}
+
+// --- Map des salles ---
 var salles = map[string][][]int{
 	"salle1": salle1,
 	"salle2": salle2,
+	"salle3": salle3,
 }
 
-// map de transitions : quand on marche sur une porte
-var transitions = map[string]string{
-	"salle1": "salle2",
-	"salle2": "", // fin du donjon
-}
-
-// RunGameLoop gère les déplacements et l'affichage
-func RunGameLoop(mapData [][]int, currentMap string) {
+// --- Boucle principale ---
+func RunGameLoopSafe() {
+	currentMap := "salle1"
+	mapData := copyMap(salles[currentMap])
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
@@ -47,6 +66,7 @@ func RunGameLoop(mapData [][]int, currentMap string) {
 			return
 		default:
 			fmt.Println("Touche inconnue.")
+			continue
 		}
 
 		if newY >= 0 && newY < len(mapData) && newX >= 0 && newX < len(mapData[0]) {
@@ -55,25 +75,40 @@ func RunGameLoop(mapData [][]int, currentMap string) {
 				continue
 			case 2: // ennemi
 				fmt.Println("💥 Vous avez rencontré un ennemi !")
-			case 7: // porte
-				fmt.Println("🚪 Vous passez dans la salle suivante...")
-				nextMap := transitions[currentMap]
-				if nextMap != "" {
-					RunGameLoop(salles[nextMap], nextMap)
+			case 7, 10: // porte haut/bas
+				if door, ok := doors[currentMap][[2]int{newX, newY}]; ok {
+					fmt.Println("🚪 Vous passez dans la salle suivante...")
+					currentMap = door.NextMap
+					mapData = copyMap(salles[currentMap])
+					// Spawn sécurisé
+					if door.SpawnX >= 0 && door.SpawnX < len(mapData[0]) &&
+						door.SpawnY >= 0 && door.SpawnY < len(mapData) {
+						placePlayerAt(mapData, door.SpawnX, door.SpawnY)
+					} else {
+						c := centerSpawn(mapData)
+						placePlayerAt(mapData, c.X, c.Y)
+					}
+					continue
 				} else {
-					fmt.Println("✅ Vous avez fini le donjon !")
+					fmt.Println("Porte inconnue.")
 				}
-				return
 			}
 
-			// Déplace le joueur
+			// Déplacement normal
 			mapData[py][px] = 0
 			mapData[newY][newX] = 1
 		}
 	}
 }
 
-// printMap affiche la salle avec rendu aligné
+// --- Spawn au centre ---
+func centerSpawn(mapData [][]int) (s Spawn) {
+	s.X = len(mapData[0]) / 2
+	s.Y = len(mapData) / 2
+	return
+}
+
+// --- Affichage ---
 func printMap(mapData [][]int) {
 	fmt.Print("\033[H\033[2J")
 	for _, row := range mapData {
@@ -81,20 +116,20 @@ func printMap(mapData [][]int) {
 			switch val {
 			case 8:
 				fmt.Print(" ๑ ")
-			case 10:
-				fmt.Print(" ↓ ")
 			case 9:
 				fmt.Print(" ▨ ")
 			case 7:
 				fmt.Print(" ↑ ")
+			case 10:
+				fmt.Print(" ↓ ")
 			case 1:
-				fmt.Print("💩 ") // joueur, 3 colonnes
+				fmt.Print("💩 ")
 			case 2:
-				fmt.Print("😈 ") // ennemi, 3 colonnes
+				fmt.Print("😈 ")
 			case 0:
 				fmt.Print(" • ")
 			default:
-				fmt.Printf("%d ", val)
+				fmt.Print(" ? ")
 			}
 		}
 		fmt.Println()
@@ -102,7 +137,7 @@ func printMap(mapData [][]int) {
 	fmt.Println()
 }
 
-// findPlayer retourne la position du joueur
+// --- Utilitaires ---
 func findPlayer(mapData [][]int) (int, int) {
 	for y := 0; y < len(mapData); y++ {
 		for x := 0; x < len(mapData[y]); x++ {
@@ -112,4 +147,24 @@ func findPlayer(mapData [][]int) (int, int) {
 		}
 	}
 	return -1, -1
+}
+
+func placePlayerAt(mapData [][]int, x, y int) {
+	for row := range mapData {
+		for col := range mapData[row] {
+			if mapData[row][col] == 1 {
+				mapData[row][col] = 0
+			}
+		}
+	}
+	mapData[y][x] = 1
+}
+
+func copyMap(original [][]int) [][]int {
+	cpy := make([][]int, len(original))
+	for i := range original {
+		cpy[i] = make([]int, len(original[i]))
+		copy(cpy[i], original[i])
+	}
+	return cpy
 }
