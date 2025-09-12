@@ -51,7 +51,7 @@ func StartSalle1() {
 		if salle1[newY][newX] != 9 {
 			// Si c'est un ennemi
 			if salle1[newY][newX] == 2 {
-				fmt.Println("MESSIR UN SARAZIN APPROCHE !")
+				fmt.Println("MESSIRE, UN SARAZIN !")
 				// Ici, tu pourrais lancer un combat
 			}
 
@@ -69,17 +69,17 @@ func printMap() {
 		for _, val := range row {
 			switch val {
 			case 8:
-				fmt.Print("๑ ")
+				fmt.Print(" ๑ ")
 			case 9:
-				fmt.Print("▨ ")
+				fmt.Print(" ▨ ")
 			case 7:
-				fmt.Print("↑ ")
+				fmt.Print(" ↑ ")
 			case 1:
-				fmt.Print("☺ ")
+				fmt.Print("💩 ")
 			case 2:
 				fmt.Print("😈 ")
 			case 0:
-				fmt.Print(". ")
+				fmt.Print(" • ")
 			default:
 				fmt.Printf("%d ", val)
 			}
