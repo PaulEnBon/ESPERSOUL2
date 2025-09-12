@@ -7,8 +7,28 @@ import (
 	"strings"
 )
 
-// RunGameLoop gère les déplacements du joueur et l'affichage
-func RunGameLoop(mapData [][]int) {
+// map de salles : relie un nom à une salle
+var salles = map[string][][]int{
+	"salle1": salle1,
+	"salle2": salle2, // salle2 must be defined below
+}
+
+// Define salle2 as a 2D slice of integers
+var salle2 = [][]int{
+	{9, 9, 9, 9, 9},
+	{9, 0, 0, 7, 9},
+	{9, 0, 1, 0, 9},
+	{9, 9, 9, 9, 9},
+}
+
+// map de transitions : quand on marche sur une porte
+var transitions = map[string]string{
+	"salle1": "salle2",
+	"salle2": "", // fin du donjon
+}
+
+// RunGameLoop gère les déplacements et l'affichage
+func RunGameLoop(mapData [][]int, currentMap string) {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
@@ -37,24 +57,33 @@ func RunGameLoop(mapData [][]int) {
 			fmt.Println("Touche inconnue.")
 		}
 
-		// Vérifie les limites de la map avant de bouger
 		if newY >= 0 && newY < len(mapData) && newX >= 0 && newX < len(mapData[0]) {
-			// Vérifie que la case n'est pas un mur
-			if mapData[newY][newX] != 9 {
-				if mapData[newY][newX] == 2 {
-					fmt.Println("💥 MESSIR,UN SARAZIN ! 💥")
+			switch mapData[newY][newX] {
+			case 9: // mur
+				continue
+			case 2: // ennemi
+				fmt.Println("💥 Vous avez rencontré un ennemi !")
+			case 7: // porte
+				fmt.Println("🚪 Vous passez dans la salle suivante...")
+				nextMap := transitions[currentMap]
+				if nextMap != "" {
+					RunGameLoop(salles[nextMap], nextMap)
+				} else {
+					fmt.Println("✅ Vous avez fini le donjon !")
 				}
-
-				mapData[py][px] = 0
-				mapData[newY][newX] = 1
+				return
 			}
+
+			// Déplace le joueur
+			mapData[py][px] = 0
+			mapData[newY][newX] = 1
 		}
 	}
 }
 
-// printMap affiche la salle dans le terminal
+// printMap affiche la salle
 func printMap(mapData [][]int) {
-	fmt.Print("\033[H\033[2J") // Efface l'écran avant chaque affichage
+	fmt.Print("\033[H\033[2J")
 	for _, row := range mapData {
 		for _, val := range row {
 			switch val {
@@ -79,7 +108,7 @@ func printMap(mapData [][]int) {
 	fmt.Println()
 }
 
-// findPlayer retourne la position du joueur (x, y)
+// findPlayer retourne la position du joueur
 func findPlayer(mapData [][]int) (int, int) {
 	for y := 0; y < len(mapData); y++ {
 		for x := 0; x < len(mapData[y]); x++ {

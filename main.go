@@ -1,6 +1,6 @@
 package main
 
 func main() {
-	// Ici tu peux changer facilement de salle
-	StartSalle1()
+	// On lance la salle 1
+	RunGameLoop(salle1, "salle1")
 }
