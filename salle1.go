@@ -51,7 +51,7 @@ func StartSalle1() {
 		if salle1[newY][newX] != 9 {
 			// Si c'est un ennemi
 			if salle1[newY][newX] == 2 {
-				fmt.Println("💥 Vous avez rencontré un ennemi !")
+				fmt.Println("MESSIR UN SARAZIN APPROCHE !")
 				// Ici, tu pourrais lancer un combat
 			}
 
