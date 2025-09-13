@@ -4,6 +4,6 @@ func main() {
 	// Affiche l'écran de départ
 	Ecrant_de_départ()
 
-	// Démarre ensuite le jeu
-	RunGameLoop(salle1, "salle1", "")
+	// Lancement du jeu dans la salle1, spawn initial
+	RunGameLoop("salle1")
 }
