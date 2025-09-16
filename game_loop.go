@@ -6,6 +6,8 @@ import (
 	"math/rand"
 	"os"
 	"strings"
+
+	"github.com/eiannone/keyboard"
 )
 
 // Note: Since Go 1.20, the global RNG is automatically seeded; no need to seed manually.
@@ -366,29 +368,43 @@ func openSecretChest(x, y int) {
 
 // Gère l'entrée utilisateur pour le déplacement et actions.
 // Retourne les nouvelles coordonnées (ou les mêmes si pas de déplacement) et un bool indiquant si la boucle doit continuer.
-func getPlayerMovement(reader *bufio.Reader, px, py int) (int, int, bool) {
-	fmt.Print("Déplacez-vous (ZQSD Pour se Déplacer, I=Inventaire, X=Quitter): ")
-	input, _ := reader.ReadString('\n')
-	input = strings.TrimSpace(strings.ToLower(input))
+func getPlayerMovement(events <-chan keyboard.KeyEvent, px, py int) (int, int, bool) {
+	fmt.Print("Déplacez-vous (ZQSD pour bouger, I=Inventaire, X=Quitter): ")
+
+	// Lire le prochain événement dispo puis drainer rapidement les répétitions bufferisées,
+	// pour que le dernier input (ex: gauche) prenne le dessus sur les répétitions (ex: droite).
+	e := <-events
+	draining := true
+	for draining {
+		select {
+		case next := <-events:
+			e = next
+		default:
+			draining = false
+		}
+	}
+
+	input := strings.ToLower(string(e.Rune))
+	key := e.Key
 
 	newX, newY := px, py
-	switch input {
-	case "z", "haut":
+	switch {
+	case input == "z" || key == keyboard.KeyArrowUp:
 		newY = py - 1
-	case "s", "bas":
+	case input == "s" || key == keyboard.KeyArrowDown:
 		newY = py + 1
-	case "q", "gauche":
+	case input == "q" || key == keyboard.KeyArrowLeft:
 		newX = px - 1
-	case "d", "droite":
+	case input == "d" || key == keyboard.KeyArrowRight:
 		newX = px + 1
-	case "i", "inv", "inventaire":
+	case input == "i":
 		showInventory()
 		return px, py, true
-	case "x", "quit", "exit":
+	case input == "x":
 		fmt.Println("Vous quittez la partie. Merci d'avoir joué !")
 		return px, py, false
 	default:
-		fmt.Println("Entrée invalide.")
+		// touche ignorée
 		return px, py, true
 	}
 	return newX, newY, true
@@ -407,8 +423,20 @@ func isValidMovement(x, y int, mapData [][]int) bool {
 
 // Boucle principale du jeu refactorisée
 func RunGameLoop(currentMap string) {
-	reader := bufio.NewReader(os.Stdin)
+	// reader removed: using keyboard events for movement
 	mapData := copyMap(salles[currentMap])
+
+	// Ouvrir une fois le clavier et récupérer un canal d'événements pour tout le loop
+	if err := keyboard.Open(); err != nil {
+		fmt.Println("Erreur d'accès clavier:", err)
+		return
+	}
+	defer keyboard.Close()
+	events, err := keyboard.GetKeys(10)
+	if err != nil {
+		fmt.Println("Erreur d'initialisation du clavier:", err)
+		return
+	}
 
 	// Applique l'état des ennemis vaincus
 	applyEnemyStates(mapData, currentMap)
@@ -428,8 +456,8 @@ func RunGameLoop(currentMap string) {
 			return
 		}
 
-		// Utiliser la nouvelle fonction de mouvement
-		newX, newY, shouldContinue := getPlayerMovement(reader, px, py)
+		// Utiliser la nouvelle fonction de mouvement (lecture instantanée via canal)
+		newX, newY, shouldContinue := getPlayerMovement(events, px, py)
 
 		if !shouldContinue {
 			return // Le joueur a quitté le jeu
