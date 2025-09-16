@@ -1,6 +1,10 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
+	"os"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
@@ -80,7 +84,23 @@ func main() {
 	pages.AddPage("main", mainLayout, true, true)
 
 	// Start app
+
+	fmt.Println("Bienvenue dans ESPER SOUL 2!")
+	fmt.Println("Appuyez sur Entrée pour commencer...")
+
+	reader := bufio.NewReader(os.Stdin)
+	_, _ = reader.ReadString('\n')
+
+	// Initialiser la salle1 avec le joueur
+	currentMap := "salle1"
+	fmt.Println("Initialisation de la partie dans la salle1...")
+
+	// Lancement du jeu
+	RunGameLoop(currentMap)
 	if err := app.EnableMouse(true).SetRoot(pages, true).Run(); err != nil {
 		panic(err)
 	}
 }
+
+// RunGameLoop gère la boucle principale du jeu
+// La fonction RunGameLoop complète est définie dans game_loop.go
