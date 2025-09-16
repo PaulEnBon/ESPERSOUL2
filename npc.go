@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
-	"strings"
 )
 
 // Dialogues des PNJ par salle et position avec récompenses
@@ -102,12 +99,46 @@ var npcDialogues = map[string]map[string]struct {
 			amount: 2,
 		},
 	},
+	"salle11": {
+		"3_2": { // PNJ soigneur au centre
+			dialogues: []string{
+				"Bienvenue au sanctuaire de repos.",
+				"Je peux te soigner complètement pour 10 pièces.",
+				"Appuie sur O pour accepter, N pour refuser.",
+			},
+			reward: "",
+			amount: 0,
+		},
+	},
 }
 
 // Système de dialogue avec les PNJ
 func showDialogue(currentMap string, x, y int) {
-	reader := bufio.NewReader(os.Stdin)
 	key := fmt.Sprintf("%d_%d", x, y)
+
+	// Helper: read a single key (last of any burst), returns lowercase rune
+	readKey := func() rune {
+		if globalKeyEvents == nil {
+			// Fallback safety: no keyboard channel available
+			return 0
+		}
+		e := <-globalKeyEvents
+		draining := true
+		for draining {
+			select {
+			case next := <-globalKeyEvents:
+				e = next
+			default:
+				draining = false
+			}
+		}
+		r := e.Rune
+		// normalize to lowercase ASCII if applicable
+		if r >= 'A' && r <= 'Z' {
+			r = r + 32
+		}
+		return r
+	}
 
 	// Cas spécial pour le marchand de salle4
 	if currentMap == "salle4" && key == "1_3" {
@@ -125,9 +156,8 @@ func showDialogue(currentMap string, x, y int) {
 				// Ne donner la récompense qu'une seule fois
 				if !rewardsGiven[currentMap][key] {
 					fmt.Print("👨 PNJ: Est-ce bien cela ? (o/n): ")
-					ans, _ := reader.ReadString('\n')
-					ans = strings.TrimSpace(strings.ToLower(ans))
-					if ans == "o" {
+					ans := readKey()
+					if ans == 'o' {
 						addToInventory("potions", 1)
 						rewardsGiven[currentMap][key] = true
 						fmt.Println("🎁 Vous recevez 1 potion.")
@@ -137,12 +167,12 @@ func showDialogue(currentMap string, x, y int) {
 				}
 			}
 			if i < len(npcData.dialogues)-1 {
-				fmt.Print("Appuyez sur Entrée pour continuer...")
-				reader.ReadString('\n')
+				fmt.Print("Appuyez sur une touche pour continuer...")
+				_ = readKey()
 			}
 		}
-		fmt.Print("Appuyez sur Entrée pour ouvrir le magasin...")
-		reader.ReadString('\n')
+		fmt.Print("Appuyez sur une touche pour ouvrir le magasin...")
+		_ = readKey()
 		fmt.Println("===================")
 
 		showMerchantInterface()
@@ -156,12 +186,12 @@ func showDialogue(currentMap string, x, y int) {
 		for i, line := range npcData.dialogues {
 			fmt.Printf("🔨 Forgeron: %s\n", line)
 			if i < len(npcData.dialogues)-1 {
-				fmt.Print("Appuyez sur Entrée pour continuer...")
-				reader.ReadString('\n')
+				fmt.Print("Appuyez sur une touche pour continuer...")
+				_ = readKey()
 			}
 		}
-		fmt.Print("Appuyez sur Entrée pour ouvrir la forge...")
-		reader.ReadString('\n')
+		fmt.Print("Appuyez sur une touche pour ouvrir la forge...")
+		_ = readKey()
 		fmt.Println("===================")
 
 		showForgeInterface()
@@ -175,12 +205,12 @@ func showDialogue(currentMap string, x, y int) {
 		for i, line := range npcData.dialogues {
 			fmt.Printf("🎰 Croupier: %s\n", line)
 			if i < len(npcData.dialogues)-1 {
-				fmt.Print("Appuyez sur Entrée pour continuer...")
-				reader.ReadString('\n')
+				fmt.Print("Appuyez sur une touche pour continuer...")
+				_ = readKey()
 			}
 		}
-		fmt.Print("Appuyez sur Entrée pour ouvrir le casino...")
-		reader.ReadString('\n')
+		fmt.Print("Appuyez sur une touche pour ouvrir le casino...")
+		_ = readKey()
 		fmt.Println("===================")
 
 		showGamblingInterface()
@@ -191,8 +221,40 @@ func showDialogue(currentMap string, x, y int) {
 	npcData, exists := npcDialogues[currentMap][key]
 	if !exists {
 		fmt.Println("👨 PNJ: Merci de m'avoir libéré !")
-		fmt.Print("Appuyez sur Entrée pour continuer...")
-		reader.ReadString('\n')
+		fmt.Print("Appuyez sur une touche pour continuer...")
+		_ = readKey()
+		return
+	}
+
+	// Cas spécial: soigneur de salle11 (3,2)
+	if currentMap == "salle11" && key == "3_2" {
+		fmt.Println("\n💬 === DIALOGUE ===")
+		for i, line := range npcData.dialogues {
+			fmt.Printf("🧙 Soigneur: %s\n", line)
+			if i < len(npcData.dialogues)-1 {
+				fmt.Print("Appuyez sur une touche pour continuer...")
+				_ = readKey()
+			}
+		}
+		fmt.Print("🧙 Soigneur: Souhaitez-vous être soigné pour 10 pièces ? (o/n): ")
+		ans := readKey()
+		if ans == 'o' {
+			if playerInventory["pièces"] >= 10 {
+				playerInventory["pièces"] -= 10
+				// Heal complet en fonction de l'armure équipée actuelle
+				tmp := currentPlayer
+				_ = EquiperArmure(&tmp, tmp.ArmuresDisponibles)
+				currentPlayer.PV = tmp.PVMax
+				fmt.Println("✨ Vous êtes complètement soigné !")
+			} else {
+				fmt.Println("🚫 Vous n'avez pas assez de pièces.")
+			}
+		} else {
+			fmt.Println("Très bien, revenez si besoin.")
+		}
+		fmt.Print("Appuyez sur une touche pour fermer...")
+		_ = readKey()
+		fmt.Println("===================")
 		return
 	}
 
@@ -200,8 +262,8 @@ func showDialogue(currentMap string, x, y int) {
 	for i, line := range npcData.dialogues {
 		fmt.Printf("👨 PNJ: %s\n", line)
 		if i < len(npcData.dialogues)-1 {
-			fmt.Print("Appuyez sur Entrée pour continuer...")
-			reader.ReadString('\n')
+			fmt.Print("Appuyez sur une touche pour continuer...")
+			_ = readKey()
 		}
 	}
 
@@ -216,7 +278,7 @@ func showDialogue(currentMap string, x, y int) {
 		}
 	}
 
-	fmt.Print("Appuyez sur Entrée pour fermer...")
-	reader.ReadString('\n')
+	fmt.Print("Appuyez sur une touche pour fermer...")
+	_ = readKey()
 	fmt.Println("===================")
 }

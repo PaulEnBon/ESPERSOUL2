@@ -24,6 +24,7 @@ var salles = map[string][][]int{
 	"salle8":  salle8,  // Salle secrète
 	"salle9":  salle9,  // Nouvelle salle
 	"salle10": salle10, // Nouvelle salle 10
+	"salle11": salle11, // Salle PNJ soins
 }
 
 // Map pour suivre l'état des coffres ouverts
@@ -31,6 +32,9 @@ var chestOpened = make(map[string]bool)
 
 // Map pour suivre l'état des coffres secrets ouverts
 var secretChestsOpened = make(map[string]bool)
+
+// Canal global pour le clavier, réutilisé par le combat pour éviter les conflits d'entrée
+var globalKeyEvents <-chan keyboard.KeyEvent
 
 // Applique l'état des ennemis vaincus sur la map
 func applyEnemyStates(mapData [][]int, currentMap string) {
@@ -55,34 +59,28 @@ func applyEnemyStates(mapData [][]int, currentMap string) {
 		}
 	}
 
-	// Générer des mobs aléatoires dans salle3 si c'est la première visite
-	if currentMap == "salle3" && len(randomMobsSalle3) == 0 {
-		generateRandomMobs(mapData)
-	} else if currentMap == "salle3" {
-		// Replacer les mobs aléatoires s'ils n'ont pas été vaincus
-		for _, mob := range randomMobsSalle3 {
-			enemyKey := fmt.Sprintf("%d_%d", mob.x, mob.y)
-			if !enemiesDefeated[currentMap][enemyKey] {
-				mapData[mob.y][mob.x] = 2 // Remettre l'ennemi
-			} else {
-				mapData[mob.y][mob.x] = 0 // Disparu si vaincu
-			}
-		}
-	} else if currentMap == "salle2" {
-		// Générer 4 ennemis aléatoires lors de la première visite de salle2
-		if len(randomMobsSalle2) == 0 {
-			generateRandomMobsSalle2(mapData)
-		} else {
-			// Replacer/convertir selon l'état de défaite
-			for _, mob := range randomMobsSalle2 {
-				enemyKey := fmt.Sprintf("%d_%d", mob.x, mob.y)
-				if !enemiesDefeated[currentMap][enemyKey] {
-					mapData[mob.y][mob.x] = 2
-				} else {
-					mapData[mob.y][mob.x] = 0
+	// Salle3: à chaque entrée, on régénère un set d'ennemis aléatoires
+	if currentMap == "salle3" {
+		// Nettoyer les ennemis existants (laisser PNJ et autres éléments intacts)
+		for y := 0; y < len(mapData); y++ {
+			for x := 0; x < len(mapData[y]); x++ {
+				if mapData[y][x] == 2 {
+					mapData[y][x] = 0
 				}
 			}
 		}
+		// Nouvelle génération aléatoire
+		generateRandomMobs(mapData)
+	} else if currentMap == "salle2" {
+		// Comme salle3/salle9: à chaque entrée, nettoyer et régénérer aléatoirement 4 ennemis
+		for y := 0; y < len(mapData); y++ {
+			for x := 0; x < len(mapData[y]); x++ {
+				if mapData[y][x] == 2 {
+					mapData[y][x] = 0
+				}
+			}
+		}
+		generateRandomMobsSalle2(mapData)
 	} else if currentMap == "salle9" {
 		// Salle9: à chaque entrée, on nettoie ennemis et on régénère 10-15 ennemis
 		for y := 0; y < len(mapData); y++ {
@@ -171,6 +169,26 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 		result := combat(currentMap, isSuper)
 
 		enemyKey := fmt.Sprintf("%d_%d", newX, newY)
+
+		// Si le joueur est mort (PV <= 0), régénérer, appliquer la perte de pièces et demander une transition vers salle1
+		if currentPlayer.PV <= 0 {
+			loss := playerInventory["pièces"] * 35 / 100
+			if loss > 0 {
+				playerInventory["pièces"] -= loss
+				fmt.Printf("☠️ Vous êtes mort. Vous perdez %d pièces (35%%).\n", loss)
+			} else {
+				fmt.Println("☠️ Vous êtes mort.")
+			}
+
+			// Régénérer le personnage: PV = PVMax effectif avec armure équipée (sans modifier la base)
+			tmp := currentPlayer
+			_ = EquiperArmure(&tmp, tmp.ArmuresDisponibles)
+			// tmp.PVMax inclut le bonus d'armure; heal complet
+			currentPlayer.PV = tmp.PVMax
+			fmt.Println("↩️  Retour à la salle 1 (spawn). Vous êtes régénéré.")
+			// Demander une transition vers salle1, l'emplacement précis sera géré dans RunGameLoop
+			return true, "salle1"
+		}
 
 		if result == "disappear" {
 			// Cas spécial: dans salle1 à (8,3) toujours transformer en PNJ
@@ -437,6 +455,8 @@ func RunGameLoop(currentMap string) {
 		fmt.Println("Erreur d'initialisation du clavier:", err)
 		return
 	}
+	// Expose le canal aux autres modules (combat) tant que le jeu est ouvert
+	globalKeyEvents = events
 
 	// Applique l'état des ennemis vaincus
 	applyEnemyStates(mapData, currentMap)
@@ -496,6 +516,9 @@ func RunGameLoop(currentMap string) {
 			// Placer le joueur selon la transition
 			if currentMap == "salle8" {
 				placePlayerAt(mapData, 3, 6) // Position spéciale pour la salle secrète
+			} else if currentMap == "salle1" {
+				// Spawn fixe au respawn
+				placePlayerAt(mapData, 8, 5)
 			} else if haveSpawn {
 				placePlayerAt(mapData, spawnX, spawnY)
 			} else {

@@ -121,14 +121,26 @@ func printMap(mapData [][]int) {
 	fmt.Println("═══════════════════════════════════════════════════════════════════════")
 
 	// Prépare les lignes d'informations pour l'affichage côte à côte
+	// Préparer la ligne des artefacts équipés
+	artNames := []string{}
+	for _, slot := range currentPlayer.ArtefactsEquipes {
+		if slot != nil {
+			artNames = append(artNames, slot.Nom)
+		}
+	}
+	artefactsStr := "Aucun"
+	if len(artNames) > 0 {
+		artefactsStr = strings.Join(artNames, ", ")
+	}
+
 	infoLines := []string{
 		"📊 === STATISTIQUES ===",
 		fmt.Sprintf("💰 Pièces: %d", playerInventory["pièces"]),
-		fmt.Sprintf("🧪 Potions: %d", playerInventory["potions"]),
+		fmt.Sprintf("� Roches: %d", currentPlayer.Roches),
 		fmt.Sprintf("🔑 Clés: %d", playerInventory["clés"]),
 		fmt.Sprintf("🗝️  Clés spéciales: %d", playerInventory["clés_spéciales"]),
-		fmt.Sprintf("⚔️  Épées: %d", playerInventory["épées"]),
 		fmt.Sprintf("💊 Puff 9K: %d", playerInventory["puff_9k"]),
+		fmt.Sprintf("🧿 Artefacts: %s", artefactsStr),
 		fmt.Sprintf("☠️ Ennemis tués: %d", playerStats.enemiesKilled),
 		"",
 		"🏆 === BONUS ===",
@@ -184,13 +196,23 @@ func printMap(mapData [][]int) {
 
 // Affiche un HUD compact pour l'inventaire uniquement
 func showCompactInventory() {
-	fmt.Printf("💰:%d 🧪:%d 🔑:%d 🗝️:%d ⚔️:%d 💊:%d",
+	// Compte des artefacts équipés
+	artCount := 0
+	for _, a := range currentPlayer.ArtefactsEquipes {
+		if a != nil {
+			artCount++
+		}
+	}
+
+	fmt.Printf("💰:%d 🔑:%d 🗝️:%d 💊:%d 🪨:%d",
 		playerInventory["pièces"],
-		playerInventory["potions"],
 		playerInventory["clés"],
 		playerInventory["clés_spéciales"],
-		playerInventory["épées"],
-		playerInventory["puff_9k"])
+		playerInventory["puff_9k"],
+		currentPlayer.Roches)
+	if artCount > 0 {
+		fmt.Printf(" 🧿:%d", artCount)
+	}
 	if playerStats.hasLegendaryWeapon {
 		fmt.Print(" 🌟:Excalibur")
 	}

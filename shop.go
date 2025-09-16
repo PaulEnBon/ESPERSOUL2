@@ -1,17 +1,34 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"math/rand"
-	"os"
-	"strings"
 	"time"
 )
 
 // Interface de commerce du marchand
 func showMerchantInterface() {
-	reader := bufio.NewReader(os.Stdin)
+	// Helper: read a single key (last of any burst), return as string "1".."9" or letter lowercased
+	readKey := func() rune {
+		if globalKeyEvents == nil {
+			return 0
+		}
+		e := <-globalKeyEvents
+		draining := true
+		for draining {
+			select {
+			case next := <-globalKeyEvents:
+				e = next
+			default:
+				draining = false
+			}
+		}
+		r := e.Rune
+		if r >= 'A' && r <= 'Z' {
+			r = r + 32
+		}
+		return r
+	}
 
 	for {
 		fmt.Println("\n🛒 === MARCHAND ===")
@@ -27,12 +44,10 @@ func showMerchantInterface() {
 		fmt.Println("4. 💊 Puff 9K - 20 pièces (+15% attaque, -5HP)")
 		fmt.Println("5. Quitter le magasin")
 		fmt.Print("Choisissez un article (1-5): ")
+		key := readKey()
 
-		input, _ := reader.ReadString('\n')
-		input = strings.TrimSpace(input)
-
-		switch input {
-		case "1":
+		switch key {
+		case '1':
 			if playerInventory["pièces"] >= 5 {
 				playerInventory["pièces"] -= 5
 				playerInventory["potions"]++
@@ -41,7 +56,7 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces!")
 			}
 
-		case "2":
+		case '2':
 			if playerInventory["pièces"] >= 10 {
 				playerInventory["pièces"] -= 10
 				playerInventory["clés"]++
@@ -50,7 +65,7 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces!")
 			}
 
-		case "3":
+		case '3':
 			if playerInventory["pièces"] >= 50 {
 				playerInventory["pièces"] -= 50
 				playerInventory["clés_spéciales"]++
@@ -59,7 +74,7 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces! (50 pièces nécessaires)")
 			}
 
-		case "4":
+		case '4':
 			if playerInventory["pièces"] >= 20 {
 				playerInventory["pièces"] -= 20
 				playerInventory["puff_9k"]++
@@ -69,69 +84,123 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces! (20 pièces nécessaires)")
 			}
 
-		case "5":
+		case '5':
 			fmt.Println("👋 Merci de votre visite!")
 			return
 
 		default:
 			fmt.Println("❌ Choix invalide!")
 		}
-
-		fmt.Print("Appuyez sur Entrée pour continuer...")
-		reader.ReadString('\n')
+		fmt.Print("Appuyez sur une touche pour continuer...")
+		_ = readKey()
 	}
 }
 
 // Interface du forgeron
 func showForgeInterface() {
-	reader := bufio.NewReader(os.Stdin)
+	readKey := func() rune {
+		if globalKeyEvents == nil {
+			return 0
+		}
+		e := <-globalKeyEvents
+		draining := true
+		for draining {
+			select {
+			case next := <-globalKeyEvents:
+				e = next
+			default:
+				draining = false
+			}
+		}
+		r := e.Rune
+		if r >= 'A' && r <= 'Z' {
+			r = r + 32
+		}
+		return r
+	}
 
 	for {
 		fmt.Println("\n🔨 === FORGERON ===")
-		fmt.Printf("💰 Vos pièces: %d\n", playerInventory["pièces"])
-		fmt.Printf("⚔️  Vos épées: %d\n", playerInventory["épées"])
+		fmt.Printf("💰 Pièces: %d  🪨 Roches: %d\n", playerInventory["pièces"], currentPlayer.Roches)
+
+		// Calcul des coûts d'amélioration actuels
+		coutArme := CoutAmelioration(currentPlayer.NiveauArme)
+		coutArmure := CoutAmelioration(currentPlayer.NiveauArmure)
+
 		fmt.Println("\n🛠️  Services disponibles:")
-		fmt.Println("1. Forger une épée - 15 pièces")
-		fmt.Println("2. Quitter la forge")
-		fmt.Print("Choisissez une option (1-2): ")
+		fmt.Printf("1. Améliorer l'arme (Niv %d → %d) - %d roches\n", currentPlayer.NiveauArme, currentPlayer.NiveauArme+1, coutArme)
+		fmt.Printf("2. Améliorer l'armure (Niv %d → %d) - %d roches\n", currentPlayer.NiveauArmure, currentPlayer.NiveauArmure+1, coutArmure)
+		fmt.Println("3. Afficher les stats du joueur")
+		fmt.Println("4. Quitter la forge")
+		fmt.Print("Choisissez une option (1-4): ")
+		key := readKey()
 
-		input, _ := reader.ReadString('\n')
-		input = strings.TrimSpace(input)
-
-		switch input {
-		case "1":
-			if playerInventory["pièces"] >= 15 {
-				playerInventory["pièces"] -= 15
-				playerInventory["épées"]++
-				fmt.Println("🔨 *Clang clang clang*")
-				fmt.Println("✨ Le forgeron vous forge une magnifique épée !")
-				fmt.Println("⚔️  Vous avez reçu une épée forgée !")
+		switch key {
+		case '1': // Améliorer l'arme
+			if err := AmeliorerArme(&currentPlayer, len(currentPlayer.ArmesDisponibles)); err != nil {
+				fmt.Printf("❌ %v\n", err)
 			} else {
-				fmt.Println("❌ Vous n'avez pas assez de pièces pour une épée!")
+				// Met à jour l'arme équipée sans double-ajout des bonus
+				if currentPlayer.NiveauArme < len(currentPlayer.ArmesDisponibles) {
+					currentPlayer.ArmeEquipee = currentPlayer.ArmesDisponibles[currentPlayer.NiveauArme]
+				}
+				fmt.Printf("✅ Arme améliorée → %s (niv %d)\n", currentPlayer.ArmeEquipee.Nom, currentPlayer.NiveauArme)
 			}
 
-		case "2":
+		case '2': // Améliorer l'armure
+			if err := AmeliorerArmure(&currentPlayer, len(currentPlayer.ArmuresDisponibles)); err != nil {
+				fmt.Printf("❌ %v\n", err)
+			} else {
+				if currentPlayer.NiveauArmure < len(currentPlayer.ArmuresDisponibles) {
+					currentPlayer.ArmureEquipee = currentPlayer.ArmuresDisponibles[currentPlayer.NiveauArmure]
+				}
+				fmt.Printf("✅ Armure améliorée → %s (niv %d)\n", currentPlayer.ArmureEquipee.Nom, currentPlayer.NiveauArmure)
+			}
+
+		case '3': // Afficher stats
+			AfficherStats(&currentPlayer)
+
+		case '4':
 			fmt.Println("👋 Revenez quand vous voulez!")
 			return
 
 		default:
 			fmt.Println("❌ Choix invalide!")
 		}
-
-		fmt.Print("Appuyez sur Entrée pour continuer...")
-		reader.ReadString('\n')
+		fmt.Print("Appuyez sur une touche pour continuer...")
+		_ = readKey()
 	}
 }
 
 // Interface de gambling
 func showGamblingInterface() {
-	reader := bufio.NewReader(os.Stdin)
 	rand.Seed(time.Now().UnixNano())
+
+	readKey := func() rune {
+		if globalKeyEvents == nil {
+			return 0
+		}
+		e := <-globalKeyEvents
+		draining := true
+		for draining {
+			select {
+			case next := <-globalKeyEvents:
+				e = next
+			default:
+				draining = false
+			}
+		}
+		r := e.Rune
+		if r >= 'A' && r <= 'Z' {
+			r = r + 32
+		}
+		return r
+	}
 
 	for {
 		fmt.Println("\n🎰 === CASINO SOUTERRAIN ===")
 		fmt.Printf("💰 Vos pièces: %d\n", playerInventory["pièces"])
-		fmt.Printf("⚔️  Vos épées: %d\n", playerInventory["épées"])
+		// Retiré: affichage des épées
 		fmt.Printf("💊 Vos Puff 9K: %d\n", playerInventory["puff_9k"])
 		if playerStats.hasLegendaryWeapon {
 			fmt.Println("🌟 Arme légendaire équipée !")
@@ -144,12 +213,10 @@ func showGamblingInterface() {
 		fmt.Println("4. Caisse Legendary - 150 pièces (Garanti légendaire !)")
 		fmt.Println("5. Quitter le casino")
 		fmt.Print("Choisissez une caisse (1-5): ")
+		key := readKey()
 
-		input, _ := reader.ReadString('\n')
-		input = strings.TrimSpace(input)
-
-		switch input {
-		case "1": // Caisse Bronze - 5 pièces
+		switch key {
+		case '1': // Caisse Bronze - 5 pièces
 			if playerInventory["pièces"] >= 5 {
 				playerInventory["pièces"] -= 5
 				fmt.Println("📦 *Ouverture de la caisse Bronze...*")
@@ -176,7 +243,7 @@ func showGamblingInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces !")
 			}
 
-		case "2": // Caisse Argent - 25 pièces
+		case '2': // Caisse Argent - 25 pièces
 			if playerInventory["pièces"] >= 25 {
 				playerInventory["pièces"] -= 25
 				fmt.Println("📦 *Ouverture de la caisse Argent...*")
@@ -204,7 +271,7 @@ func showGamblingInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces !")
 			}
 
-		case "3": // Caisse Or - 75 pièces
+		case '3': // Caisse Or - 75 pièces
 			if playerInventory["pièces"] >= 75 {
 				playerInventory["pièces"] -= 75
 				fmt.Println("📦 *Ouverture de la caisse Or...*")
@@ -232,7 +299,7 @@ func showGamblingInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces !")
 			}
 
-		case "4": // Caisse Legendary - 150 pièces (100% légendaire)
+		case '4': // Caisse Legendary - 150 pièces (100% légendaire)
 			if playerInventory["pièces"] >= 150 {
 				playerInventory["pièces"] -= 150
 				fmt.Println("📦 *Ouverture de la caisse LEGENDARY...*")
@@ -259,15 +326,14 @@ func showGamblingInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces !")
 			}
 
-		case "5":
+		case '5':
 			fmt.Println("🎰 À bientôt au casino !")
 			return
 
 		default:
 			fmt.Println("❌ Choix invalide !")
 		}
-
-		fmt.Print("Appuyez sur Entrée pour continuer...")
-		reader.ReadString('\n')
+		fmt.Print("Appuyez sur une touche pour continuer...")
+		_ = readKey()
 	}
 }

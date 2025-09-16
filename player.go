@@ -3,7 +3,12 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 )
+
+// Personnage persistant utilisé hors combat (forge, affichage, etc.)
+// Par défaut on démarre avec Steeve; pourra être changé par la création de personnage.
+var currentPlayer = Steeve
 
 // Inventaire du joueur
 var playerInventory = map[string]int{
@@ -31,10 +36,22 @@ func showInventory() {
 	fmt.Println("\n🎒 === INVENTAIRE ===")
 	fmt.Printf("🔑 Clés: %d\n", playerInventory["clés"])
 	fmt.Printf("🗝️  Clés spéciales: %d\n", playerInventory["clés_spéciales"])
-	fmt.Printf("🧪 Potions: %d\n", playerInventory["potions"])
 	fmt.Printf("💰 Pièces: %d\n", playerInventory["pièces"])
-	fmt.Printf("⚔️  Épées: %d\n", playerInventory["épées"])
+	fmt.Printf("🪨 Roches d'évolution: %d\n", currentPlayer.Roches)
+	fmt.Printf("🧪 Potions: %d\n", playerInventory["potions"])
 	fmt.Printf("💊 Puff 9K: %d\n", playerInventory["puff_9k"])
+	// Affiche les artefacts équipés
+	artefacts := []string{}
+	for _, a := range currentPlayer.ArtefactsEquipes {
+		if a != nil {
+			artefacts = append(artefacts, a.Nom)
+		}
+	}
+	if len(artefacts) > 0 {
+		fmt.Printf("🧿 Artefacts équipés: %s\n", strings.Join(artefacts, ", "))
+	} else {
+		fmt.Println("🧿 Artefacts équipés: Aucun")
+	}
 	if playerStats.hasLegendaryWeapon {
 		fmt.Println("🌟 Excalibur Légendaire équipée!")
 	}
@@ -51,9 +68,6 @@ func addToInventory(item string, amount int) {
 func calculateAttackDamage() int {
 	baseDamage := 20 + rand.Intn(15) // 20-34 dégâts de base
 
-	// Bonus des épées : +3 dégâts par épée
-	swordBonus := playerInventory["épées"] * 3
-
 	// Bonus du Puff 9K : +15% par Puff 9K utilisé
 	puffBonus := float64(playerStats.attackBoost) / 100.0
 
@@ -63,7 +77,7 @@ func calculateAttackDamage() int {
 		legendaryBonus = 0.5
 	}
 
-	totalDamage := float64(baseDamage+swordBonus) * (1.0 + puffBonus + legendaryBonus)
+	totalDamage := float64(baseDamage) * (1.0 + puffBonus + legendaryBonus)
 
 	return int(totalDamage)
 }

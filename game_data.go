@@ -12,6 +12,7 @@ var enemiesDefeated = map[string]map[string]bool{
 	"salle8":  make(map[string]bool),
 	"salle9":  make(map[string]bool),
 	"salle10": make(map[string]bool),
+	"salle11": make(map[string]bool),
 }
 
 // État des ennemis transformés en PNJ (pour différencier d'une disparition)
@@ -26,6 +27,7 @@ var pnjTransformed = map[string]map[string]bool{
 	"salle8":  make(map[string]bool),
 	"salle9":  make(map[string]bool),
 	"salle10": make(map[string]bool),
+	"salle11": make(map[string]bool),
 }
 
 // État des récompenses déjà récupérées
@@ -40,6 +42,7 @@ var rewardsGiven = map[string]map[string]bool{
 	"salle8":  make(map[string]bool),
 	"salle9":  make(map[string]bool),
 	"salle10": make(map[string]bool),
+	"salle11": make(map[string]bool),
 }
 
 // Transitions entre les salles
@@ -82,9 +85,12 @@ var transitions = map[string]map[int]struct {
 	},
 	"salle9": {
 		38: {nextMap: "salle3", spawnX: 13, spawnY: 12},
-		44: {nextMap: "salle10", spawnX: 1, spawnY: 2},
+		44: {nextMap: "salle11", spawnX: 3, spawnY: 3},
 	},
 	"salle10": {
+		42: {nextMap: "salle9", spawnX: 7, spawnY: 1},
+	},
+	"salle11": {
 		42: {nextMap: "salle9", spawnX: 7, spawnY: 1},
 	},
 }

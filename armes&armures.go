@@ -29,6 +29,88 @@ type Arme struct {
 	Competences     []Competence
 }
 
+// Retourne le template de base de la classe d'un personnage selon son nom
+func getBaseTemplateByName(name string) (Personnage, bool) {
+	switch name {
+	case Steeve.Nom:
+		return Steeve, true
+	case CRS.Nom:
+		return CRS, true
+	case Pyromane.Nom:
+		return Pyromane, true
+	case RobinDesBois.Nom:
+		return RobinDesBois, true
+	case Boucher.Nom:
+		return Boucher, true
+	case CroMagnon.Nom:
+		return CroMagnon, true
+	case Zeus.Nom:
+		return Zeus, true
+	case Samourai.Nom:
+		return Samourai, true
+	case Gandalf.Nom:
+		return Gandalf, true
+	case Singe.Nom:
+		return Singe, true
+	case Bambi.Nom:
+		return Bambi, true
+	case Poseidon.Nom:
+		return Poseidon, true
+	default:
+		return Personnage{}, false
+	}
+}
+
+// Ré-initialise les stats du perso à celles de sa classe puis ré-applique l'arme/armure équipées
+func RecomputeFromBaseAndEquip(p *Personnage) {
+	base, ok := getBaseTemplateByName(p.Nom)
+	if !ok {
+		return // Classe inconnue: ne rien faire pour éviter des états incohérents
+	}
+
+	oldPV := p.PV
+	oldPVMax := p.PVMax
+
+	// Remettre les stats de base de la classe
+	p.PVMax = base.PVMax
+	p.PV = base.PV // valeur provisoire; ajustée après équipement
+	p.Armure = base.Armure
+	p.ResistMag = base.ResistMag
+	p.Precision = base.Precision
+	p.TauxCritique = base.TauxCritique
+	p.MultiplicateurCrit = base.MultiplicateurCrit
+
+	// Réinitialiser l'équipement courant (structs)
+	p.ArmeEquipee = Arme{}
+	p.ArmureEquipee = Armure{}
+
+	// Ré-appliquer l'armure selon le niveau actuel
+	if p.NiveauArmure >= 0 && p.NiveauArmure < len(p.ArmuresDisponibles) {
+		_ = EquiperArmure(p, p.ArmuresDisponibles)
+	}
+	// Ré-appliquer l'arme selon le niveau actuel
+	if p.NiveauArme >= 0 && p.NiveauArme < len(p.ArmesDisponibles) {
+		_ = EquiperArme(p, p.ArmesDisponibles[p.NiveauArme])
+	}
+
+	// Préserver le ratio de PV après la montée de stats
+	if oldPVMax > 0 {
+		ratio := float64(oldPV) / float64(oldPVMax)
+		newPV := int(ratio * float64(p.PVMax))
+		if newPV < 1 {
+			newPV = 1
+		}
+		if newPV > p.PVMax {
+			newPV = p.PVMax
+		}
+		p.PV = newPV
+	} else {
+		if p.PV > p.PVMax {
+			p.PV = p.PVMax
+		}
+	}
+}
+
 func EquiperArme(p *Personnage, a Arme) error {
 	p.ArmeEquipee = a
 	p.Precision += a.Precision
@@ -65,6 +147,8 @@ func AmeliorerArme(p *Personnage, maxNiveau int) error {
 	}
 	p.Roches -= cout
 	p.NiveauArme++
+	// Ré-initialiser les stats de base puis ré-appliquer l'équipement au nouveau niveau
+	RecomputeFromBaseAndEquip(p)
 	return nil
 }
 
@@ -78,6 +162,8 @@ func AmeliorerArmure(p *Personnage, maxNiveau int) error {
 	}
 	p.Roches -= cout
 	p.NiveauArmure++
+	// Ré-initialiser les stats de base puis ré-appliquer l'équipement au nouveau niveau
+	RecomputeFromBaseAndEquip(p)
 	return nil
 }
 
