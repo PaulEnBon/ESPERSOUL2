@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/rivo/tview"
 )
 
@@ -22,9 +24,15 @@ func Création_du_perssonnage(pages *tview.Pages) tview.Primitive {
 			"ytftyfyty",
 		}, 0, nil).
 		AddCheckbox("Hard mode:", false, nil).
-		AddPasswordField("Secret:", "", 10, '*', nil).
 		AddButton("Play", func() {
-			pages.SwitchToPage("main")
+			currentMap := "salle1"
+			fmt.Println("Initialisation de la partie dans la salle1...")
+
+			// Lancement du jeu
+			RunGameLoop(currentMap)
+
+			// Switch to the game page (adjust the page name if needed)
+			pages.SwitchToPage("RunGameLoop")
 		}).
 		AddButton("Back", func() {
 			// Go back to main menu
