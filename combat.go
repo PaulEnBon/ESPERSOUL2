@@ -180,10 +180,10 @@ func isSelfBuff(effectName string) bool {
 }
 
 // propose la liste des compétences de l'arme et retourne le choix de l'utilisateur
-func chooseCompetence(p *Personnage) (Competence, bool) {
+func chooseCompetence(p *Personnage) (Competence, bool, bool) {
 	comps := p.ArmeEquipee.Competences
 	if len(comps) == 0 {
-		return Competence{}, false
+		return Competence{}, false, false
 	}
 	fmt.Println("\nChoisissez une compétence:")
 	for i, c := range comps {
@@ -194,22 +194,29 @@ func chooseCompetence(p *Personnage) (Competence, bool) {
 		}
 		fmt.Printf("  %d) %s [%s] Dégâts:%d%s\n", i+1, c.Nom, c.Type, c.Degats, extra)
 	}
-	fmt.Print("Votre choix (1-", len(comps), "): ")
+	fmt.Println("  R) Retour")
+	fmt.Print("Votre choix (1-", len(comps), " ou R): ")
 	// Lire une seule touche depuis le canal global
 	if globalKeyEvents == nil {
 		// Fallback extrême si le canal n'est pas prêt
-		return comps[0], true
+		return comps[0], true, false
 	}
 	e := <-globalKeyEvents
+	if e.Key == keyboard.KeyEsc {
+		return Competence{}, false, true
+	}
 	r := e.Rune
+	if r == 'r' || r == 'R' {
+		return Competence{}, false, true
+	}
 	if r >= '1' && r <= '9' {
 		idx := int(r - '0')
 		if idx >= 1 && idx <= len(comps) {
-			return comps[idx-1], true
+			return comps[idx-1], true, false
 		}
 	}
 	fmt.Println("Saisie invalide, compétence par défaut utilisée.")
-	return comps[0], true
+	return comps[0], true, false
 }
 
 // Sous-menu Objets (potion, Puff 9K, etc.) — n'utilise pas le tour
@@ -524,8 +531,8 @@ func combat(currentMap string, isSuper bool) interface{} {
 			fmt.Println("🌟 Excalibur équipée (+50% dégâts de loot)")
 		}
 
-		// Affichage des actions (Objets via sous-menu, Défense intégrée)
-		fmt.Println("Actions: [A]ttaquer, [D]éfendre, [O]bjet, [F]uir")
+		// Affichage des actions (Objets via sous-menu)
+		fmt.Println("Actions: [A]ttaquer, [O]bjet, [F]uir")
 		fmt.Print("Choisissez une action: ")
 		// Utilise le même canal que la boucle de jeu
 		if globalKeyEvents == nil {
@@ -544,7 +551,11 @@ func combat(currentMap string, isSuper bool) interface{} {
 		switch input {
 		case "a":
 			// Sélection de compétence
-			comp, ok := chooseCompetence(&player)
+			comp, ok, back := chooseCompetence(&player)
+			if back {
+				// Retour au menu principal sans consommer le tour
+				continue
+			}
 			if !ok {
 				// Fallback absolument minimal
 				comp = Competence{Nom: "Attaque", Degats: 15, Type: "physique"}
@@ -592,13 +603,6 @@ func combat(currentMap string, isSuper bool) interface{} {
 				}
 			}
 
-		case "d":
-			fmt.Println("🛡️  Vous vous défendez !")
-			// La défense réduit les dégâts du prochain coup ennemi
-			// On simule un bouclier temporaire stocké dans un effet léger
-			shield := Effet{Nom: "Bouclier", ToursRestants: 1, ModifArmure: 0.30, ChanceAppliquer: 1.0}
-			AppliquerEffet(&player, shield)
-			// Pas d'attaque joueur ce tour, on enchaîne vers l'ennemi
 		case "o":
 			// Sous-menu objets: n'utilise pas le tour
 			if died := objectMenu(&player, &enemy); died {
@@ -823,7 +827,7 @@ func combatWithAssignedType(currentMap string, isSuper bool, name string) interf
 			fmt.Println("🌟 Excalibur équipée (+50% dégâts de loot)")
 		}
 
-		fmt.Println("Actions: [A]ttaquer, [D]éfendre, [O]bjet, [F]uir")
+		fmt.Println("Actions: [A]ttaquer, [O]bjet, [F]uir")
 		fmt.Print("Choisissez une action: ")
 		if globalKeyEvents == nil {
 			fmt.Println("(clavier non initialisé)")
@@ -839,7 +843,10 @@ func combatWithAssignedType(currentMap string, isSuper bool, name string) interf
 
 		switch input {
 		case "a":
-			comp, ok := chooseCompetence(&player)
+			comp, ok, back := chooseCompetence(&player)
+			if back {
+				continue
+			}
 			if !ok {
 				comp = Competence{Nom: "Attaque", Degats: 15, Type: "physique"}
 			}
@@ -878,10 +885,6 @@ func combatWithAssignedType(currentMap string, isSuper bool, name string) interf
 					fmt.Println("🙃 Votre attaque rate sa cible !")
 				}
 			}
-		case "d":
-			fmt.Println("🛡️  Vous vous défendez !")
-			shield := Effet{Nom: "Bouclier", ToursRestants: 1, ModifArmure: 0.30, ChanceAppliquer: 1.0}
-			AppliquerEffet(&player, shield)
 		case "o":
 			if died := objectMenu(&player, &enemy); died {
 				currentPlayer.PV = player.PV
