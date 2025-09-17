@@ -119,24 +119,6 @@ func buildPlayerCharacter() Personnage {
 	return p
 }
 
-// fabrique un ennemi générique en fonction du niveau de menace
-func buildEnemy(isSuper bool) Personnage {
-	base := Personnage{
-		Nom:                "Créature",
-		PV:                 8,
-		PVMax:              8,
-		Armure:             10,
-		ResistMag:          8,
-		Precision:          0.80,
-		TauxCritique:       0.10,
-		MultiplicateurCrit: 1.5,
-	}
-	// Arme simple pour l'ennemi
-	arme := epeePierre
-	_ = EquiperArme(&base, arme)
-	return base
-}
-
 // réalise une attaque avec calcul précision/crit/type en utilisant les helpers de degats.go
 func resolveAttack(attaquant, defenseur *Personnage, degatsBase int, typeAttaque string) (degats int, touche bool, crit bool) {
 	d, estCrit, aTouche := CalculerDegatsAvecCritique(attaquant, defenseur, degatsBase, typeAttaque)
@@ -155,6 +137,26 @@ func pickCompetence(p *Personnage) (Competence, bool) {
 		}
 	}
 	return p.ArmeEquipee.Competences[0], true
+}
+
+// Sélection aléatoire d'une compétence pour l'IA ennemie
+//   - 70%: privilégie une compétence avec dégâts (>0) si disponible
+//   - 30%: choix totalement aléatoire (utilitaire/buff compris)
+func pickRandomCompetence(p *Personnage) (Competence, bool) {
+	comps := p.ArmeEquipee.Competences
+	if len(comps) == 0 {
+		return Competence{}, false
+	}
+	offensives := make([]Competence, 0, len(comps))
+	for _, c := range comps {
+		if c.Degats > 0 {
+			offensives = append(offensives, c)
+		}
+	}
+	if len(offensives) > 0 && rand.Intn(100) < 70 {
+		return offensives[rand.Intn(len(offensives))], true
+	}
+	return comps[rand.Intn(len(comps))], true
 }
 
 // applique un effet éventuel sur la cible en fonction de la compétence
@@ -215,13 +217,13 @@ func chooseCompetence(p *Personnage) (Competence, bool) {
 func objectMenu(player, enemy *Personnage) bool {
 	for {
 		fmt.Println("\n🎒 Objets:")
-	// Soins
-	fmt.Printf("  1) Potion (x%d) — +70 PV\n", playerInventory["potions"])
-	fmt.Printf("  2) Potion Mineure (x%d) — soin léger\n", playerInventory["potion_mineure"])
-	fmt.Printf("  3) Potion Majeure (x%d) — soin puissant\n", playerInventory["potion_majeure"])
-	fmt.Printf("  4) Potion Suprême (x%d) — soin massif\n", playerInventory["potion_supreme"])
-	fmt.Printf("  5) Antidote (x%d) — retire poison\n", playerInventory["antidote"])
-	fmt.Printf("  V) Vodka de Vitaly (x%d) — régénère toute la vie !\n", playerInventory["vodka_vitaly"])
+		// Soins
+		fmt.Printf("  1) Potion (x%d) — +70 PV\n", playerInventory["potions"])
+		fmt.Printf("  2) Potion Mineure (x%d) — soin léger\n", playerInventory["potion_mineure"])
+		fmt.Printf("  3) Potion Majeure (x%d) — soin puissant\n", playerInventory["potion_majeure"])
+		fmt.Printf("  4) Potion Suprême (x%d) — soin massif\n", playerInventory["potion_supreme"])
+		fmt.Printf("  5) Antidote (x%d) — retire poison\n", playerInventory["antidote"])
+		fmt.Printf("  V) Vodka de Vitaly (x%d) — régénère toute la vie !\n", playerInventory["vodka_vitaly"])
 		// Buffs
 		fmt.Printf("  6) Puff 9K (x%d) — +15%%%% dégâts (loot) + buff, -5 PV\n", playerInventory["puff_9k"])
 		fmt.Printf("  7) Élixir de Force (x%d) — buff dégâts\n", playerInventory["elixir_force"])
@@ -632,7 +634,7 @@ func combat(currentMap string, isSuper bool) interface{} {
 				}
 				currentPlayer.PV = player.PV
 				playerStats.attackBoost = 0
-				fmt.Println("� La créature disparaît complètement dans un nuage de fumée...")
+				fmt.Println("💨 La créature disparaît complètement dans un nuage de fumée...")
 				return "disappear"
 			}
 			// Sinon, ne consomme pas le tour ennemi
@@ -699,8 +701,8 @@ func combat(currentMap string, isSuper bool) interface{} {
 		if EstEtourdi(&enemy) {
 			fmt.Println("😵‍💫 L'ennemi est étourdi et rate son tour !")
 		} else {
-			// L'ennemi tente une compétence simple si disponible
-			ecomp, ok := pickCompetence(&enemy)
+			// L'ennemi choisit une compétence au hasard (biais offensif)
+			ecomp, ok := pickRandomCompetence(&enemy)
 			edeg := enemyAttackBase
 			etype := "physique"
 			if ok {
@@ -725,7 +727,15 @@ func combat(currentMap string, isSuper bool) interface{} {
 					fmt.Printf("💥 L'ennemi vous inflige %d dégâts.\n", edmg)
 				}
 				if ok {
-					maybeApplyEffect(&player, ecomp)
+					// Buff/soin sur soi → appliqué à l'ennemi, sinon effet offensif sur le joueur
+					if ecomp.Degats <= 0 && ecomp.TypeEffet != "" && isSelfBuff(ecomp.TypeEffet) {
+						if eff := CreerEffet(ecomp.TypeEffet, ecomp.Puissance); eff != nil {
+							AppliquerEffet(&enemy, *eff)
+							fmt.Printf("✨ L'ennemi s'applique %s.\n", ecomp.Nom)
+						}
+					} else if ecomp.TypeEffet != "" {
+						maybeApplyEffect(&player, ecomp)
+					}
 				}
 			}
 		}
@@ -953,7 +963,7 @@ func combatWithAssignedType(currentMap string, isSuper bool, name string) interf
 		if EstEtourdi(&enemy) {
 			fmt.Println("😵‍💫 L'ennemi est étourdi et rate son tour !")
 		} else {
-			ecomp, ok := pickCompetence(&enemy)
+			ecomp, ok := pickRandomCompetence(&enemy)
 			edeg := enemyAttackBase
 			etype := "physique"
 			if ok {
@@ -978,7 +988,14 @@ func combatWithAssignedType(currentMap string, isSuper bool, name string) interf
 					fmt.Printf("💥 L'ennemi vous inflige %d dégâts.\n", edmg)
 				}
 				if ok {
-					maybeApplyEffect(&player, ecomp)
+					if ecomp.Degats <= 0 && ecomp.TypeEffet != "" && isSelfBuff(ecomp.TypeEffet) {
+						if eff := CreerEffet(ecomp.TypeEffet, ecomp.Puissance); eff != nil {
+							AppliquerEffet(&enemy, *eff)
+							fmt.Printf("✨ L'ennemi s'applique %s.\n", ecomp.Nom)
+						}
+					} else if ecomp.TypeEffet != "" {
+						maybeApplyEffect(&player, ecomp)
+					}
 				}
 			}
 		}
