@@ -112,6 +112,18 @@ func cellToSymbol(val int) string {
 		return "💥"
 	case 47: // Frame explosion 2
 		return "🔥"
+	case 66:
+		return "⚙️" // spawner
+	case 67:
+		return "🛡️" // mini boss
+	case 68:
+		return "👑" // boss
+	case 70, 73, 76: // mini boss niveaux 2,3,4
+		return "🛡️"
+	case 71, 74, 77: // spawner niveaux 2,3,4
+		return "⚙️"
+	case 72, 75, 78: // boss niveaux 2,3,4
+		return "👑"
 	case 11, 16, 17, 18, 19, 22, 23, 24, 25, 26, 29, 36, 37, 39, 41, 43, 45, 58, 59, 60, 61, 62, 63, 64, 65:
 		return "•"
 	case 0:

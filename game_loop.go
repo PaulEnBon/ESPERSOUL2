@@ -171,6 +171,14 @@ func applyEnemyStates(mapData [][]int, currentMap string) {
 			}
 		}
 	}
+
+	// Systèmes mini boss / boss personnalisés
+	if currentMap == "salle12" {
+		applySalle12MiniBossSystem(mapData)
+	}
+	if currentMap == "salle13" || currentMap == "salle14" || currentMap == "salle15" {
+		applyGenericBossRoom(currentMap, mapData)
+	}
 }
 
 // Vérifie si le joueur a vaincu le monstre obligatoire de la salle1 (coordonnées 8,3)
@@ -317,10 +325,156 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 			addHUDMessage("🪨 Il vous faut une pioche pour briser cette pierre (๑).")
 			return false, currentMap
 		}
-		// Animation d'explosion courte (2 frames) pour feedback visuel
 		playExplosion(mapData, newX, newY)
 		addHUDMessage("💥 La pierre se désintègre dans une explosion ! Passage libre.")
 		stoneBroken = true
+		return false, currentMap
+	case 67: // Mini boss salle12
+		if currentMap == "salle12" {
+			addHUDMessage("🛡️ Mini-Boss !")
+			// Combat super -> après combat on applique déjà scaling; on pourrait injecter un buff avant
+			// (Simplification: on laisse CreateRandomEnemyForMap + isSuper pour PV/crit de base)
+			result := combat(currentMap, true)
+			if currentPlayer.PV <= 0 {
+				loss := playerInventory["pièces"] * 35 / 100
+				if loss > 0 {
+					playerInventory["pièces"] -= loss
+				}
+				// respawn salle1
+				return true, "salle1"
+			}
+			if result == true || result == "disappear" { // vaincu
+				key := fmt.Sprintf("%d_%d", newX, newY)
+				salle12BossState.defeatedMini[key] = true
+				mapData[py][px] = 0
+				mapData[newY][newX] = 1
+				// Ajouter fragment inventaire
+				addToInventory("fragment_spawn", 1)
+				salle12BossState.fragments++
+				addHUDMessage(fmt.Sprintf("🧩 Fragment obtenu (%d/4)", salle12BossState.fragments))
+				if salle12BossState.fragments >= 4 && !salle12BossState.spawnerSpawn {
+					addHUDMessage("⚙️ Un spawner apparaît au centre !")
+					// sera placé à la prochaine application d'état (ou immédiatement)
+					cx, cy := salle12Center[0], salle12Center[1]
+					if mapData[cy][cx] != 1 {
+						mapData[cy][cx] = 66
+					}
+					salle12BossState.spawnerSpawn = true
+				}
+			}
+			return false, currentMap
+		}
+		return false, currentMap
+
+	case 66: // Spawner (interagir pour invoquer boss si fragments OK)
+		if currentMap == "salle12" && salle12BossState.spawnerSpawn && !salle12BossState.bossDefeated {
+			if salle12BossState.fragments < 4 {
+				addHUDMessage("❌ Il manque des fragments.")
+				return false, currentMap
+			}
+			addHUDMessage("🔥 Le boss est invoqué !")
+			mapData[newY][newX] = 68 // Boss
+			return false, currentMap
+		}
+		return false, currentMap
+
+	case 68: // Boss final salle12
+		if currentMap == "salle12" && !salle12BossState.bossDefeated {
+			addHUDMessage("👹 Boss Niveau 1/4 !")
+			result := combat(currentMap, true)
+			if currentPlayer.PV <= 0 {
+				loss := playerInventory["pièces"] * 35 / 100
+				if loss > 0 {
+					playerInventory["pièces"] -= loss
+				}
+				return true, "salle1"
+			}
+			if result == true || result == "disappear" {
+				addHUDMessage("🏆 Boss vaincu !")
+				salle12BossState.bossDefeated = true
+				mapData[newY][newX] = 1
+				mapData[py][px] = 0
+				addToInventory("pièces", 50)
+			}
+			return false, currentMap
+		}
+		return false, currentMap
+
+	// --- Générique salles 13-15 ---
+	case 70, 73, 76: // Mini boss niveaux 2,3,4
+		if cfg, ok := bossRooms[currentMap]; ok {
+			st := &cfg.state
+			// Déterminer si case correspond à mini code de cette salle
+			if cell == cfg.codeMini {
+				addHUDMessage(fmt.Sprintf("🛡️ Mini-Boss Niveau %d !", cfg.level))
+				result := combat(currentMap, true)
+				if currentPlayer.PV <= 0 {
+					loss := playerInventory["pièces"] * 35 / 100
+					if loss > 0 {
+						playerInventory["pièces"] -= loss
+					}
+					return true, "salle1"
+				}
+				if result == true || result == "disappear" {
+					key := fmt.Sprintf("%d_%d", newX, newY)
+					st.defeatedMini[key] = true
+					mapData[py][px] = 0
+					mapData[newY][newX] = 1
+					addToInventory("fragment_spawn", 1)
+					st.fragments++
+					addHUDMessage(fmt.Sprintf("🧩 Fragment obtenu (%d/4)", st.fragments))
+					if st.fragments >= 4 && !st.spawnerSpawn {
+						addHUDMessage("⚙️ Un spawner apparaît au centre !")
+						cx, cy := cfg.center[0], cfg.center[1]
+						if mapData[cy][cx] != 1 {
+							mapData[cy][cx] = cfg.codeSpawn
+						}
+						st.spawnerSpawn = true
+					}
+				}
+			}
+		}
+		return false, currentMap
+
+	case 71, 74, 77: // Spawner niveaux 2,3,4
+		if cfg, ok := bossRooms[currentMap]; ok {
+			st := &cfg.state
+			if cell == cfg.codeSpawn && st.spawnerSpawn && !st.bossDefeated {
+				if st.fragments < 4 {
+					addHUDMessage("❌ Il manque des fragments.")
+					return false, currentMap
+				}
+				addHUDMessage("🔥 Le boss est invoqué !")
+				mapData[newY][newX] = cfg.codeBoss
+			}
+		}
+		return false, currentMap
+
+	case 72, 75, 78: // Boss niveaux 2,3,4
+		if cfg, ok := bossRooms[currentMap]; ok {
+			st := &cfg.state
+			if cell == cfg.codeBoss && !st.bossDefeated {
+				addHUDMessage(fmt.Sprintf("👹 Boss Niveau %d/4 !", cfg.level))
+				result := combat(currentMap, true)
+				if currentPlayer.PV <= 0 {
+					loss := playerInventory["pièces"] * 35 / 100
+					if loss > 0 {
+						playerInventory["pièces"] -= loss
+					}
+					return true, "salle1"
+				}
+				if result == true || result == "disappear" {
+					addHUDMessage("🏆 Boss vaincu !")
+					st.bossDefeated = true
+					mapData[newY][newX] = 1
+					mapData[py][px] = 0
+					// Récompense progressive
+					reward := 50 + (cfg.level-1)*25
+					addToInventory("pièces", reward)
+					addHUDMessage(fmt.Sprintf("💰 Vous gagnez %d pièces !", reward))
+				}
+			}
+		}
 		return false, currentMap
 
 	case 3: // PNJ
@@ -361,6 +515,29 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 			if currentMap == "salle1" && !canLeaveSalle1() {
 				addHUDMessage("⚠️ Vous ne pouvez pas encore quitter la salle1. Le monstre n'a pas été vaincu !")
 				return false, currentMap
+			}
+			// Gating progression boss successifs
+			if cell == 52 { // vers salle13
+				if !salle12BossState.bossDefeated {
+					addHUDMessage("⛔ La porte est scellée. Vainquez d'abord le Boss Niveau 1/4.")
+					return false, currentMap
+				}
+			}
+			if cell == 54 { // vers salle14
+				if st, ok2 := bossRooms["salle13"]; ok2 {
+					if !st.state.bossDefeated {
+						addHUDMessage("⛔ La porte est scellée. Vainquez d'abord le Boss Niveau 2/4.")
+						return false, currentMap
+					}
+				}
+			}
+			if cell == 56 { // vers salle15
+				if st, ok2 := bossRooms["salle14"]; ok2 {
+					if !st.state.bossDefeated {
+						addHUDMessage("⛔ La porte est scellée. Vainquez d'abord le Boss Niveau 3/4.")
+						return false, currentMap
+					}
+				}
 			}
 			fmt.Printf("Transition vers %s aux coordonnées (%d,%d)\n", tr.nextMap, tr.spawnX, tr.spawnY)
 			return true, tr.nextMap

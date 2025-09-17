@@ -172,6 +172,32 @@ func combat(currentMap string, isSuper bool) interface{} {
 	// Crée les entités combat
 	player := buildPlayerCharacter()
 	enemy := CreateRandomEnemyForMap(currentMap, isSuper)
+
+	// Scaling supplémentaire pour salles boss progressives
+	levelMultiplier := 1.0
+	switch currentMap {
+	case "salle12":
+		levelMultiplier = 1.2 // Niveau 1/4
+	case "salle13":
+		levelMultiplier = 1.5 // Niveau 2/4
+	case "salle14":
+		levelMultiplier = 1.9 // Niveau 3/4
+	case "salle15":
+		levelMultiplier = 2.4 // Niveau 4/4
+	}
+	if levelMultiplier > 1.0 {
+		enemy.PV = int(float64(enemy.PV) * levelMultiplier)
+		enemy.PVMax = int(float64(enemy.PVMax) * levelMultiplier)
+		// Buff dégâts via augmentation base dégâts arme
+		if enemy.ArmeEquipee.Nom != "" {
+			enemy.ArmeEquipee.DegatsPhysiques = int(float64(enemy.ArmeEquipee.DegatsPhysiques) * (0.85 + levelMultiplier/1.5))
+		}
+		// Légère hausse critique
+		enemy.TauxCritique += 0.03 * (levelMultiplier - 1)
+		if enemy.TauxCritique > 0.60 {
+			enemy.TauxCritique = 0.60
+		}
+	}
 	enemyAttackBase := enemy.ArmeEquipee.DegatsPhysiques
 	if enemyAttackBase <= 0 {
 		enemyAttackBase = 12
