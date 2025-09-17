@@ -3,12 +3,11 @@ package main
 import (
 	"fmt"
 	"math/rand"
-	"strings"
 )
 
 // Personnage persistant utilisé hors combat (forge, affichage, etc.)
 // Par défaut on démarre avec Steeve; pourra être changé par la création de personnage.
-var currentPlayer = Steeve
+var currentPlayer = Pyromane
 
 // Inventaire du joueur
 var playerInventory = map[string]int{
@@ -29,33 +28,6 @@ var playerStats = struct {
 	attackBoost:        0,
 	hasLegendaryWeapon: false,
 	enemiesKilled:      0,
-}
-
-// Affiche l'inventaire du joueur
-func showInventory() {
-	fmt.Println("\n🎒 === INVENTAIRE ===")
-	fmt.Printf("🔑 Clés: %d\n", playerInventory["clés"])
-	fmt.Printf("🗝️  Clés spéciales: %d\n", playerInventory["clés_spéciales"])
-	fmt.Printf("💰 Pièces: %d\n", playerInventory["pièces"])
-	fmt.Printf("🪨 Roches d'évolution: %d\n", currentPlayer.Roches)
-	fmt.Printf("🧪 Potions: %d\n", playerInventory["potions"])
-	fmt.Printf("💊 Puff 9K: %d\n", playerInventory["puff_9k"])
-	// Affiche les artefacts équipés
-	artefacts := []string{}
-	for _, a := range currentPlayer.ArtefactsEquipes {
-		if a != nil {
-			artefacts = append(artefacts, a.Nom)
-		}
-	}
-	if len(artefacts) > 0 {
-		fmt.Printf("🧿 Artefacts équipés: %s\n", strings.Join(artefacts, ", "))
-	} else {
-		fmt.Println("🧿 Artefacts équipés: Aucun")
-	}
-	if playerStats.hasLegendaryWeapon {
-		fmt.Println("🌟 Excalibur Légendaire équipée!")
-	}
-	fmt.Println("===================")
 }
 
 // Ajoute un objet à l'inventaire

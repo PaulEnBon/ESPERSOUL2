@@ -179,9 +179,9 @@ func combat(currentMap string, isSuper bool) interface{} {
 
 	fmt.Println("\n🗡️  COMBAT ENGAGÉ ! 🗡️")
 	if isSuper {
-		fmt.Printf("Vous affrontez un ENNEMI SURPUISSANT: %s\n", enemy.Nom)
+		fmt.Println("Vous affrontez un ENNEMI SURPUISSANT !")
 	} else {
-		fmt.Printf("Vous affrontez: %s\n", enemy.Nom)
+		fmt.Println("Vous affrontez une créature maudite !")
 	}
 
 	for player.PV > 0 && enemy.PV > 0 {
@@ -190,9 +190,12 @@ func combat(currentMap string, isSuper bool) interface{} {
 			fmt.Println("🌟 Excalibur équipée (+50% dégâts de loot)")
 		}
 
-		// Ne plus afficher les compétences par défaut ici; on ne les montrera que lors de l'action Attaquer
+		// Affiche compétence de base
+		if comp, ok := pickCompetence(&player); ok {
+			fmt.Printf("Compétence de base: %s (%s, %d dégâts)\n", comp.Nom, comp.Type, comp.Degats)
+		}
 
-		fmt.Println("Actions: [A]ttaquer, [P]otion, [U]ser Puff 9K, [F]uir")
+		fmt.Println("Actions: [A]ttaquer, [D]éfendre, [P]otion, [U]ser Puff 9K, [F]uir")
 		fmt.Print("Choisissez une action: ")
 		// Utilise le même canal que la boucle de jeu
 		if globalKeyEvents == nil {
@@ -259,6 +262,14 @@ func combat(currentMap string, isSuper bool) interface{} {
 				}
 			}
 
+		case "d":
+			fmt.Println("🛡️  Vous vous défendez !")
+			// La défense réduit les dégâts du prochain coup ennemi
+			// On simule un bouclier temporaire stocké dans un effet léger
+			shield := Effet{Nom: "Bouclier", ToursRestants: 1, ModifArmure: 0.30, ChanceAppliquer: 1.0}
+			AppliquerEffet(&player, shield)
+			// Pas d'attaque joueur ce tour, on enchaîne vers l'ennemi
+
 		case "p":
 			if playerInventory["potions"] > 0 {
 				heal := 70
@@ -270,9 +281,8 @@ func combat(currentMap string, isSuper bool) interface{} {
 				fmt.Printf("🧪 Vous vous soignez de %d PV ! (PV actuels: %d/%d)\n", heal, player.PV, player.PVMax)
 			} else {
 				fmt.Println("❌ Vous n'avez pas de potions !")
+				// saute le tour ennemi si pas d'action ? non, on continue le tour normal
 			}
-			// Utiliser une potion ne passe pas le tour: revenir au choix d'action
-			continue
 
 		case "u":
 			if playerInventory["puff_9k"] > 0 {
@@ -297,8 +307,6 @@ func combat(currentMap string, isSuper bool) interface{} {
 			} else {
 				fmt.Println("❌ Vous n'avez pas de Puff 9K !")
 			}
-			// Utiliser (ou tenter d'utiliser) une Puff ne passe pas le tour
-			continue
 
 		case "f":
 			fmt.Println("💨 Vous fuyez le combat !")
@@ -400,258 +408,6 @@ func combat(currentMap string, isSuper bool) interface{} {
 			fmt.Println("\n💀 DÉFAITE ! Vous avez été vaincu...")
 			fmt.Println("🔄 Vous retournez au début de la salle.")
 			// Persiste les PV du joueur (reste à 0)
-			currentPlayer.PV = player.PV
-			playerStats.attackBoost = 0
-			return false
-		}
-	}
-
-	return false
-}
-
-// Variante qui force un type d'ennemi si name est non vide
-func combatWithAssignedType(currentMap string, isSuper bool, name string) interface{} {
-	rand.Seed(time.Now().UnixNano())
-
-	// Joueur
-	player := buildPlayerCharacter()
-
-	// Choix de l'ennemi
-	var enemy Personnage
-	if name == "" {
-		enemy = CreateRandomEnemyForMap(currentMap, isSuper)
-	} else {
-		// Cherche le template par nom à partir du tier de la salle
-		tier := tierForMap(currentMap)
-		var pool []EnemyTemplate
-		switch tier {
-		case TierTutorial:
-			pool = tutorialPool
-		case TierEarly:
-			pool = earlyPool
-		case TierMid:
-			pool = midPool
-		case TierLate:
-			pool = latePool
-		default:
-			pool = earlyPool
-		}
-		found := false
-		for _, t := range pool {
-			if t.Name == name {
-				enemy = NewEnemyFromTemplate(t, isSuper)
-				// Préfixer le nom comme dans CreateRandomEnemyForMap
-				typeEmoji := emojiForEnemyName(t.Name)
-				diffEmoji := emojiForTier(tier)
-				prefix := typeEmoji + " " + diffEmoji
-				if isSuper {
-					prefix = "💀 " + prefix
-				}
-				enemy.Nom = prefix + " " + enemy.Nom
-				found = true
-				break
-			}
-		}
-		if !found {
-			enemy = CreateRandomEnemyForMap(currentMap, isSuper)
-		}
-	}
-
-	enemyAttackBase := enemy.ArmeEquipee.DegatsPhysiques
-	if enemyAttackBase <= 0 {
-		enemyAttackBase = 12
-	}
-
-	fmt.Println("\n🗡️  COMBAT ENGAGÉ ! 🗡️")
-	if isSuper {
-		fmt.Printf("Vous affrontez un ENNEMI SURPUISSANT: %s\n", enemy.Nom)
-	} else {
-		fmt.Printf("Vous affrontez: %s\n", enemy.Nom)
-	}
-
-	for player.PV > 0 && enemy.PV > 0 {
-		fmt.Printf("\n💚 Vos PV: %d/%d | 💀 PV Ennemi: %d/%d\n", player.PV, player.PVMax, enemy.PV, enemy.PVMax)
-		if playerStats.hasLegendaryWeapon {
-			fmt.Println("🌟 Excalibur équipée (+50% dégâts de loot)")
-		}
-
-		// Ne plus afficher les compétences par défaut ici; on ne les montrera que lors de l'action Attaquer
-
-		fmt.Println("Actions: [A]ttaquer, [D]éfendre, [P]otion, [U]ser Puff 9K, [F]uir")
-		fmt.Print("Choisissez une action: ")
-		if globalKeyEvents == nil {
-			fmt.Println("(clavier non initialisé)")
-			return false
-		}
-		e := <-globalKeyEvents
-		input := strings.ToLower(string(e.Rune))
-		if e.Key == keyboard.KeyEsc {
-			input = "f"
-		}
-
-		AppliquerProtectionsArtefactsDebutTour(&player)
-
-		switch input {
-		case "a":
-			comp, ok := chooseCompetence(&player)
-			if !ok {
-				comp = Competence{Nom: "Attaque", Degats: 15, Type: "physique"}
-			}
-			if comp.Degats <= 0 && comp.TypeEffet != "" && isSelfBuff(comp.TypeEffet) {
-				if eff := CreerEffet(comp.TypeEffet, comp.Puissance); eff != nil {
-					AppliquerEffet(&player, *eff)
-					fmt.Printf("✨ Vous utilisez %s sur vous-même.\n", comp.Nom)
-				}
-			} else if comp.Degats <= 0 && comp.TypeEffet != "" {
-				if eff := CreerEffet(comp.TypeEffet, comp.Puissance); eff != nil {
-					AppliquerEffet(&enemy, *eff)
-					fmt.Printf("✨ Vous appliquez %s à l'ennemi.\n", comp.Nom)
-				}
-			} else {
-				degatsBase := comp.Degats
-				typeAtk := comp.Type
-				if degatsBase <= 0 {
-					degatsBase = 15
-				}
-				if typeAtk == "" {
-					typeAtk = "physique"
-				}
-				dmg, touche, crit := resolveAttack(&player, &enemy, degatsBase, typeAtk)
-				if !touche {
-					fmt.Println("🙃 Votre attaque rate sa cible !")
-				} else {
-					enemy.PV -= dmg
-					if enemy.PV < 0 {
-						enemy.PV = 0
-					}
-					if crit {
-						fmt.Printf("⚔️  Coup critique ! Vous infligez %d dégâts.\n", dmg)
-					} else {
-						fmt.Printf("⚔️  Vous infligez %d dégâts.\n", dmg)
-					}
-					if comp.TypeEffet != "" {
-						maybeApplyEffect(&enemy, comp)
-					}
-				}
-			}
-		case "d":
-			fmt.Println("🛡️  Vous vous défendez !")
-			shield := Effet{Nom: "Bouclier", ToursRestants: 1, ModifArmure: 0.30, ChanceAppliquer: 1.0}
-			AppliquerEffet(&player, shield)
-		case "p":
-			if playerInventory["potions"] > 0 {
-				heal := 70
-				player.PV += heal
-				if player.PV > player.PVMax {
-					player.PV = player.PVMax
-				}
-				playerInventory["potions"]--
-				fmt.Printf("🧪 Vous vous soignez de %d PV ! (PV actuels: %d/%d)\n", heal, player.PV, player.PVMax)
-			} else {
-				fmt.Println("❌ Vous n'avez pas de potions !")
-			}
-		case "u":
-			if playerInventory["puff_9k"] > 0 {
-				playerInventory["puff_9k"]--
-				playerStats.attackBoost += 15
-				if eff := CreerEffet("Augmentation de Dégâts", 2); eff != nil {
-					AppliquerEffet(&player, *eff)
-				}
-				player.PV -= 5
-				if player.PV < 0 {
-					player.PV = 0
-				}
-				fmt.Println("💊 Vous utilisez un Puff 9K !")
-				fmt.Println("⚡ +15% de dégâts (loot) et buff de dégâts temporaire !")
-				fmt.Printf("💔 Vous perdez 5 PV. PV actuels: %d/%d\n", player.PV, player.PVMax)
-				if player.PV <= 0 {
-					fmt.Println("💀 Le Puff 9K vous a tué ! Attention à la surdose...")
-					return false
-				}
-			} else {
-				fmt.Println("❌ Vous n'avez pas de Puff 9K !")
-			}
-		case "f":
-			fmt.Println("💨 Vous fuyez le combat !")
-			currentPlayer.PV = player.PV
-			playerStats.attackBoost = 0
-			return false
-		default:
-			fmt.Println("Action invalide !")
-		}
-
-		TraiterEffetsFinTour(&player)
-		TraiterEffetsFinTour(&enemy)
-
-		if enemy.PV <= 0 {
-			fmt.Println("\n🎉 VICTOIRE ! Vous avez vaincu la créature !")
-			playerStats.enemiesKilled++
-			coins, jackpot, details := computeCoinLoot()
-			addToInventory("pièces", coins)
-			if jackpot {
-				fmt.Printf("💎 JACKPOT ! Vous obtenez %d pièces (%s) !\n", coins, details)
-			} else {
-				fmt.Printf("✨ Vous avez reçu %d pièces (%s).\n", coins, details)
-			}
-			tier := tierForMap(currentMap)
-			rocks := 0
-			switch tier {
-			case TierTutorial, TierEarly:
-				rocks = 1
-			case TierMid:
-				rocks = 2
-			case TierLate:
-				rocks = 3
-			}
-			if rocks > 0 {
-				currentPlayer.Roches += rocks
-				fmt.Printf("🪨 Vous obtenez %d roche(s) d'évolution. Total roches: %d\n", rocks, currentPlayer.Roches)
-			}
-			currentPlayer.PV = player.PV
-			playerStats.attackBoost = 0
-			fmt.Println("💨 La créature disparaît complètement dans un nuage de fumée...")
-			return "disappear"
-		}
-
-		if EstEtourdi(&enemy) {
-			fmt.Println("😵‍💫 L'ennemi est étourdi et rate son tour !")
-		} else {
-			ecomp, ok := pickCompetence(&enemy)
-			edeg := enemy.ArmeEquipee.DegatsPhysiques
-			etype := "physique"
-			if ok {
-				if ecomp.Degats > 0 {
-					edeg = ecomp.Degats
-				}
-				if ecomp.Type != "" {
-					etype = ecomp.Type
-				}
-			}
-			edmg, touche, crit := resolveAttack(&enemy, &player, edeg, etype)
-			if !touche {
-				fmt.Println("🌀 L'ennemi rate son attaque !")
-			} else {
-				player.PV -= edmg
-				if player.PV < 0 {
-					player.PV = 0
-				}
-				if crit {
-					fmt.Printf("💥 Coup critique ennemi ! Vous subissez %d dégâts.\n", edmg)
-				} else {
-					fmt.Printf("💥 L'ennemi vous inflige %d dégâts.\n", edmg)
-				}
-				if ok {
-					maybeApplyEffect(&player, ecomp)
-				}
-			}
-		}
-
-		TraiterEffetsFinTour(&player)
-		TraiterEffetsFinTour(&enemy)
-
-		if player.PV <= 0 {
-			fmt.Println("\n💀 DÉFAITE ! Vous avez été vaincu...")
-			fmt.Println("🔄 Vous retournez au début de la salle.")
 			currentPlayer.PV = player.PV
 			playerStats.attackBoost = 0
 			return false

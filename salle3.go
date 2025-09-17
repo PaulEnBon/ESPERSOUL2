@@ -1,8 +1,8 @@
 package main
 
 var salle3 = [][]int{
-	{9, 33, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 34, 9, 9}, // 7 = portes vers salle5 (gauche) et salle6 (droite)
-	{9, 37, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 36, 0, 9}, // 24 = spawn salle5, 25 = spawn salle6
+	{9, 33, 9, 9, 9, 9, 9, 50, 9, 9, 9, 9, 34, 9, 9}, // 7 = portes vers salle5 (gauche) et salle6 (droite)
+	{9, 37, 0, 0, 0, 0, 0, 58, 0, 0, 0, 0, 36, 0, 9}, // 24 = spawn salle5, 25 = spawn salle6
 	{9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9},
 	{9, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 9},
 	{9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9},

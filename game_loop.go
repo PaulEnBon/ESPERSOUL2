@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/eiannone/keyboard"
 )
@@ -25,6 +26,10 @@ var salles = map[string][][]int{
 	"salle9":  salle9,  // Nouvelle salle
 	"salle10": salle10, // Nouvelle salle 10
 	"salle11": salle11, // Salle PNJ soins
+	"salle12": salle12, // Nouvelle salle 12
+	"salle13": salle13, // Nouvelle salle 13
+	"salle14": salle14, // Nouvelle salle 14
+	"salle15": salle15, // Nouvelle salle 15
 }
 
 // Map pour suivre l'état des coffres ouverts
@@ -32,6 +37,28 @@ var chestOpened = make(map[string]bool)
 
 // Map pour suivre l'état des coffres secrets ouverts
 var secretChestsOpened = make(map[string]bool)
+
+// Buffer de messages HUD à afficher sous la ligne de déplacement
+var hudMessages []string
+
+// État persistant : pierre bloquante de salle1 déjà détruite ?
+var stoneBroken bool
+
+// Ajoute un message au HUD (limite optionnelle pour éviter l'accumulation)
+func addHUDMessage(msg string) {
+	if len(strings.TrimSpace(msg)) == 0 {
+		return
+	}
+	hudMessages = append(hudMessages, msg)
+	if len(hudMessages) > 5 { // garder seulement les 5 derniers
+		hudMessages = hudMessages[len(hudMessages)-5:]
+	}
+}
+
+// Vide les messages HUD
+func clearHUDMessages() {
+	hudMessages = hudMessages[:0]
+}
 
 // Canal global pour le clavier, réutilisé par le combat pour éviter les conflits d'entrée
 var globalKeyEvents <-chan keyboard.KeyEvent
@@ -59,6 +86,17 @@ func applyEnemyStates(mapData [][]int, currentMap string) {
 		}
 	}
 
+	// Si on est en salle1 et que la pierre a été cassée, la retirer si présente
+	if currentMap == "salle1" && stoneBroken {
+		for y := 0; y < len(mapData); y++ {
+			for x := 0; x < len(mapData[y]); x++ {
+				if mapData[y][x] == 35 {
+					mapData[y][x] = 0
+				}
+			}
+		}
+	}
+
 	// Salle3: à chaque entrée, on régénère un set d'ennemis aléatoires
 	if currentMap == "salle3" {
 		// Nettoyer les ennemis existants (laisser PNJ et autres éléments intacts)
@@ -69,9 +107,6 @@ func applyEnemyStates(mapData [][]int, currentMap string) {
 				}
 			}
 		}
-		// Reset des assignations
-		enemyAssignments[currentMap] = make(map[string]string)
-		// Nouvelle génération aléatoire
 		generateRandomMobs(mapData)
 	} else if currentMap == "salle2" {
 		// Comme salle3/salle9: à chaque entrée, nettoyer et régénérer aléatoirement 4 ennemis
@@ -82,7 +117,6 @@ func applyEnemyStates(mapData [][]int, currentMap string) {
 				}
 			}
 		}
-		enemyAssignments[currentMap] = make(map[string]string)
 		generateRandomMobsSalle2(mapData)
 	} else if currentMap == "salle9" {
 		// Salle9: à chaque entrée, on nettoie ennemis et on régénère 10-15 ennemis
@@ -93,7 +127,6 @@ func applyEnemyStates(mapData [][]int, currentMap string) {
 				}
 			}
 		}
-		enemyAssignments[currentMap] = make(map[string]string)
 		generateRandomMobsSalle9(mapData)
 	} else if currentMap == "salle10" {
 		// Générer positions si première visite
@@ -107,25 +140,6 @@ func applyEnemyStates(mapData [][]int, currentMap string) {
 				mapData[mob.y][mob.x] = 2
 				if isSuper {
 					mapData[mob.y][mob.x] = 12
-				}
-				// Assigner un type d'ennemi selon la salle (tier)
-				tier := tierForMap(currentMap)
-				var pool []EnemyTemplate
-				switch tier {
-				case TierTutorial:
-					pool = tutorialPool
-				case TierEarly:
-					pool = earlyPool
-				case TierMid:
-					pool = midPool
-				case TierLate:
-					pool = latePool
-				default:
-					pool = earlyPool
-				}
-				if len(pool) > 0 {
-					chosen := pool[rand.Intn(len(pool))]
-					enemyAssignments[currentMap][key] = chosen.Name
 				}
 			}
 		} else {
@@ -143,25 +157,6 @@ func applyEnemyStates(mapData [][]int, currentMap string) {
 							mapData[mob.y][mob.x] = 12
 						}
 						enemiesDefeated[currentMap][key] = false
-						// Ré-assigner un type
-						tier := tierForMap(currentMap)
-						var pool []EnemyTemplate
-						switch tier {
-						case TierTutorial:
-							pool = tutorialPool
-						case TierEarly:
-							pool = earlyPool
-						case TierMid:
-							pool = midPool
-						case TierLate:
-							pool = latePool
-						default:
-							pool = earlyPool
-						}
-						if len(pool) > 0 {
-							chosen := pool[rand.Intn(len(pool))]
-							enemyAssignments[currentMap][key] = chosen.Name
-						}
 					} else {
 						mapData[mob.y][mob.x] = 0 // reste vide
 					}
@@ -176,6 +171,23 @@ func applyEnemyStates(mapData [][]int, currentMap string) {
 			}
 		}
 	}
+}
+
+// Vérifie si le joueur a vaincu le monstre obligatoire de la salle1 (coordonnées 8,3)
+// On considère la salle "libérée" si l'ennemi est marqué vaincu OU transformé en PNJ.
+func canLeaveSalle1() bool {
+	key := "8_3"
+	if defeatedMap, ok := enemiesDefeated["salle1"]; ok {
+		if defeatedMap[key] { // Ennemi vaincu (disparu ou PNJ)
+			return true
+		}
+	}
+	if trMap, ok := pnjTransformed["salle1"]; ok {
+		if trMap[key] { // Transformé en PNJ (cas spécial)
+			return true
+		}
+	}
+	return false
 }
 
 // Gère les interactions avec les différents types de cases
@@ -206,11 +218,11 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 			return false, currentMap
 		}
 	case 2, 12: // ennemi (2=normal, 12=super)
-		fmt.Println("Vous rencontrez une créature maudite !")
+		addHUDMessage("⚔️ Vous rencontrez une créature maudite !")
 		isSuper := (cell == 12)
+		result := combat(currentMap, isSuper)
+
 		enemyKey := fmt.Sprintf("%d_%d", newX, newY)
-		// Si un type est assigné à cette position, on le conserve pour l'instanciation du combat
-		result := combatWithAssignedType(currentMap, isSuper, enemyAssignments[currentMap][enemyKey])
 
 		// Si le joueur est mort (PV <= 0), régénérer, appliquer la perte de pièces et demander une transition vers salle1
 		if currentPlayer.PV <= 0 {
@@ -244,16 +256,19 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 				} else {
 					placePlayerNearby(mapData, newX, newY)
 				}
-				fmt.Println("La créature retrouve sa forme humaine et devient un PNJ amical !")
+				// Récompense unique : clé ET pioche (si pas déjà donnée)
+				if playerInventory["pioche"] == 0 {
+					addToInventory("pioche", 1)
+					addHUDMessage("🪓 Vous obtenez une PIÔCHE ! Elle peut briser la pierre sacrée (๑).")
+				}
+				addHUDMessage("🤝 La créature retrouve sa forme humaine et devient un PNJ amical !")
 				showDialogue(currentMap, newX, newY)
 			} else {
 				enemiesDefeated[currentMap][enemyKey] = true
 				mapData[py][px] = 0
 				mapData[newY][newX] = 1
-				fmt.Println("Vous pouvez maintenant passer par cette case.")
+				addHUDMessage("✅ Ennemi vaincu. Passage dégagé.")
 			}
-			// Nettoie l'assignation une fois l'ennemi disparu
-			delete(enemyAssignments[currentMap], enemyKey)
 		} else if result == true {
 			// Cas spécial: autoriser la transformation en PNJ UNIQUEMENT
 			// pour l'unique mob de salle1 (coordonnées 8,3 dans salle1).
@@ -267,19 +282,45 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 				} else {
 					placePlayerNearby(mapData, newX, newY)
 				}
-				fmt.Println("La créature retrouve sa forme humaine et devient un PNJ amical !")
+				if playerInventory["pioche"] == 0 {
+					addToInventory("pioche", 1)
+					addHUDMessage("🪓 Vous obtenez une PIÔCHE ! Elle peut briser la pierre sacrée (๑).")
+				}
+				addHUDMessage("🤝 La créature retrouve sa forme humaine et devient un PNJ amical !")
 				showDialogue(currentMap, newX, newY)
 			} else {
 				// Tous les autres mobs ne se transforment plus jamais
 				enemiesDefeated[currentMap][enemyKey] = true
 				mapData[py][px] = 0
 				mapData[newY][newX] = 1
-				fmt.Println("Vous pouvez maintenant passer par cette case.")
+				addHUDMessage("✅ Ennemi vaincu. Passage dégagé.")
 			}
-			delete(enemyAssignments[currentMap], enemyKey)
 		} else {
-			fmt.Println("Vous restez à votre position.")
+			addHUDMessage("⛔ Vous restez à votre position.")
 		}
+		return false, currentMap
+
+	case 35: // Pierre sacrée bloquante devant la porte de salle1
+		if currentMap != "salle1" {
+			return false, currentMap
+		}
+		// Si déjà détruite (sécurité) : traiter comme sol
+		if stoneBroken {
+			mapData[newY][newX] = 0
+			return false, currentMap
+		}
+		if !canLeaveSalle1() {
+			addHUDMessage("🪨 La pierre est incassable tant que le monstre n'est pas vaincu.")
+			return false, currentMap
+		}
+		if playerInventory["pioche"] == 0 {
+			addHUDMessage("🪨 Il vous faut une pioche pour briser cette pierre (๑).")
+			return false, currentMap
+		}
+		// Animation d'explosion courte (2 frames) pour feedback visuel
+		playExplosion(mapData, newX, newY)
+		addHUDMessage("💥 La pierre se désintègre dans une explosion ! Passage libre.")
+		stoneBroken = true
 		return false, currentMap
 
 	case 3: // PNJ
@@ -289,6 +330,11 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 
 	case 30: // Porte spéciale vers la salle secrète dans salle1
 		if currentMap == "salle1" {
+			// Empêcher de quitter la salle1 avant d'avoir vaincu le monstre clé
+			if !canLeaveSalle1() {
+				addHUDMessage("⚠️ Une force mystérieuse vous empêche de partir... Vainquez d'abord le monstre de la salle !")
+				return false, currentMap
+			}
 			if playerInventory["clés_spéciales"] > 0 {
 				fmt.Println("Vous utilisez votre clé spéciale !")
 				fmt.Println("Un passage secret s'ouvre...")
@@ -309,9 +355,13 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 			}
 		}
 
-	// Toutes les autres portes - gestion unifiée
-	case 7, 10, 13, 14, 15, 20, 21, 27, 28, 31, 33, 34, 38, 40, 42, 44:
+	// Toutes les autres portes - gestion unifiée (inclut nouvelles portes 50/51/52/53)
+	case 7, 10, 13, 14, 15, 20, 21, 27, 28, 31, 33, 34, 38, 40, 42, 44, 50, 51, 52, 53, 54, 55, 56, 57:
 		if tr, ok := transitions[currentMap][cell]; ok {
+			if currentMap == "salle1" && !canLeaveSalle1() {
+				addHUDMessage("⚠️ Vous ne pouvez pas encore quitter la salle1. Le monstre n'a pas été vaincu !")
+				return false, currentMap
+			}
 			fmt.Printf("Transition vers %s aux coordonnées (%d,%d)\n", tr.nextMap, tr.spawnX, tr.spawnY)
 			return true, tr.nextMap
 		} else {
@@ -434,6 +484,16 @@ func openSecretChest(x, y int) {
 func getPlayerMovement(events <-chan keyboard.KeyEvent, px, py int) (int, int, bool) {
 	fmt.Print("Déplacez-vous (ZQSD pour bouger, I=Inventaire, X=Quitter): ")
 
+	// Afficher les messages HUD accumulés juste sous la ligne de déplacement
+	if len(hudMessages) > 0 {
+		fmt.Println()
+		for _, m := range hudMessages {
+			fmt.Println(m)
+		}
+		clearHUDMessages()
+		fmt.Print("→ ")
+	}
+
 	// Lire le prochain événement dispo puis drainer rapidement les répétitions bufferisées,
 	// pour que le dernier input (ex: gauche) prenne le dessus sur les répétitions (ex: droite).
 	e := <-events
@@ -461,7 +521,7 @@ func getPlayerMovement(events <-chan keyboard.KeyEvent, px, py int) (int, int, b
 	case input == "d" || key == keyboard.KeyArrowRight:
 		newX = px + 1
 	case input == "i":
-		showInventory()
+		showInventoryMenu(events)
 		return px, py, true
 	case input == "x":
 		fmt.Println("Vous quittez la partie. Merci d'avoir joué !")
@@ -512,7 +572,7 @@ func RunGameLoop(currentMap string) {
 	}
 
 	for {
-		printMap(mapData, currentMap) // Le HUD est maintenant intégré dans printMap
+		printMap(mapData) // Le HUD est maintenant intégré dans printMap
 		fmt.Printf("📍 Salle actuelle: %s\n", currentMap)
 
 		px, py := findPlayer(mapData)
@@ -572,4 +632,22 @@ func RunGameLoop(currentMap string) {
 			}
 		}
 	}
+}
+
+// Affiche une courte animation d'explosion pour la pierre (utilise les codes 46 et 47)
+// Bloque environ 250ms au total – suffisamment court pour ne pas gêner le gameplay.
+func playExplosion(mapData [][]int, x, y int) {
+	frames := []int{46, 47}
+	for i, f := range frames {
+		mapData[y][x] = f
+		printMap(mapData)
+		fmt.Printf("📍 Salle actuelle: %s\n", "salle1")
+		if i == 0 {
+			time.Sleep(120 * time.Millisecond)
+		} else {
+			time.Sleep(150 * time.Millisecond)
+		}
+	}
+	// Nettoie la case (sol vide)
+	mapData[y][x] = 0
 }

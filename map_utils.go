@@ -42,7 +42,7 @@ func copyMap(src [][]int) [][]int {
 // Convertit une cellule en symbole
 var useASCII = false // Passez à true pour un mode ASCII aligné sans emojis
 
-func cellToSymbol(val, x, y int, currentMap string) string {
+func cellToSymbol(val int) string {
 	if useASCII {
 		switch val {
 		case 9:
@@ -59,12 +59,16 @@ func cellToSymbol(val, x, y int, currentMap string) string {
 			return "F"
 		case 6:
 			return "C"
-		case 7, 10, 13, 14, 15, 20, 21, 27, 28, 31, 33, 34, 38, 40, 42, 44:
+		case 7, 10, 13, 14, 15, 20, 21, 27, 28, 31, 33, 34, 38, 40, 42, 44, 50, 51, 52, 53, 54, 55, 56, 57:
 			return "P"
 		case 30:
 			return "S"
 		case 32:
 			return "X"
+		case 35:
+			return "B" // Bloc pierre
+		case 46, 47:
+			return "*" // Frames explosion
 		default:
 			return "."
 		}
@@ -72,13 +76,13 @@ func cellToSymbol(val, x, y int, currentMap string) string {
 	switch val {
 	case 8:
 		return "⬜"
-	case 14, 38:
+	case 14, 38, 52, 55:
 		return "→"
-	case 13, 40:
+	case 13, 40, 53, 54:
 		return "←"
-	case 15, 27, 31, 10, 21, 42:
+	case 15, 27, 31, 10, 21, 42, 51, 57:
 		return "↓"
-	case 28, 33, 34, 44:
+	case 28, 33, 34, 44, 50, 56:
 		return "↑"
 	case 9:
 		return "▨"
@@ -90,19 +94,10 @@ func cellToSymbol(val, x, y int, currentMap string) string {
 		return "↑"
 	case 1:
 		return "🎮" // Joueur plus visible
-	case 2, 12:
-		// Affiche un emoji spécifique selon le type assigné
-		key := fmt.Sprintf("%d_%d", x, y)
-		if currentMap != "" {
-			if name, ok := enemyAssignments[currentMap][key]; ok && name != "" {
-				return emojiForEnemyName(name)
-			}
-		}
-		// Fallbacks si pas d'assignation
-		if val == 12 {
-			return "💀"
-		}
-		return "👹"
+	case 2:
+		return "👹" // Ennemi
+	case 12:
+		return "💀" // Super Ennemi (2x stats)
 	case 3:
 		return "👨" // PNJ
 	case 4:
@@ -111,7 +106,13 @@ func cellToSymbol(val, x, y int, currentMap string) string {
 		return "🔨" // Forgeron
 	case 6:
 		return "💰" // Coffre
-	case 11, 16, 17, 18, 19, 22, 23, 24, 25, 26, 29, 36, 37, 39, 41, 43, 45:
+	case 35: // Pierre bloquant la sortie de salle1
+		return "๑"
+	case 46: // Frame explosion 1
+		return "💥"
+	case 47: // Frame explosion 2
+		return "🔥"
+	case 11, 16, 17, 18, 19, 22, 23, 24, 25, 26, 29, 36, 37, 39, 41, 43, 45, 58, 59, 60, 61, 62, 63, 64, 65:
 		return "•"
 	case 0:
 		return "•"
@@ -120,8 +121,57 @@ func cellToSymbol(val, x, y int, currentMap string) string {
 	}
 }
 
+// Helpers d'abréviation pour la colonne compétences
+func shortType(t string) string {
+	switch t {
+	case "physique":
+		return "P"
+	case "magique":
+		return "M"
+	default:
+		if len(t) > 1 {
+			return strings.ToUpper(string([]rune(t)[0]))
+		}
+		return "?"
+	}
+}
+
+func abbrevEffet(e string) string {
+	switch e {
+	case "Saignement":
+		return "Saig"
+	case "Brise-Armure":
+		return "BrArm"
+	case "Brise-Armure Magique":
+		return "BrArM"
+	case "Étourdissement":
+		return "Stun"
+	case "Brûlure":
+		return "Brul"
+	case "Nébulation":
+		return "Nébu"
+	case "Affaiblissement":
+		return "Affaib"
+	case "Défavorisation":
+		return "Défav"
+	case "Augmentation de Dégâts":
+		return "+ATK"
+	case "Augmentation de Dégâts Magiques":
+		return "+MATK"
+	case "Régénération":
+		return "Regen"
+	case "Guérison Poison":
+		return "Antid"
+	default:
+		if len(e) > 6 {
+			return e[:6]
+		}
+		return e
+	}
+}
+
 // Affiche la map avec HUD optimisé
-func printMap(mapData [][]int, currentMap string) {
+func printMap(mapData [][]int) {
 	fmt.Print("\033[H\033[2J") // Nettoie l'écran
 
 	// En-tête du jeu
@@ -142,99 +192,181 @@ func printMap(mapData [][]int, currentMap string) {
 		artefactsStr = strings.Join(artNames, ", ")
 	}
 
+	// Colonne 1 : Statistiques globales simplifiées (seulement ce que l'utilisateur souhaite conserver)
 	infoLines := []string{
 		"📊 === STATISTIQUES ===",
 		fmt.Sprintf("💰 Pièces: %d", playerInventory["pièces"]),
-		fmt.Sprintf("� Roches: %d", currentPlayer.Roches),
-		fmt.Sprintf("🔑 Clés: %d", playerInventory["clés"]),
-		fmt.Sprintf("🗝️  Clés spéciales: %d", playerInventory["clés_spéciales"]),
-		fmt.Sprintf("💊 Puff 9K: %d", playerInventory["puff_9k"]),
-		fmt.Sprintf("🧿 Artefacts: %s", artefactsStr),
 		fmt.Sprintf("☠️ Ennemis tués: %d", playerStats.enemiesKilled),
+		fmt.Sprintf("🧿 Artefacts: %s", artefactsStr),
+	}
+
+	// Colonne 2 : Statistiques détaillées du joueur
+	// Arme équipée : si vide (ex: jamais explicitement équipée encore), tenter de récupérer via niveau
+	weaponName := "Aucune"
+	phys, mag := 0, 0
+	critW := 0.0
+	if currentPlayer.ArmeEquipee.Nom == "" && currentPlayer.NiveauArme >= 0 && currentPlayer.NiveauArme < len(currentPlayer.ArmesDisponibles) {
+		// Auto-récupération silencieuse (n'affecte pas les stats cumulatives déjà appliquées ailleurs)
+		weapon := currentPlayer.ArmesDisponibles[currentPlayer.NiveauArme]
+		weaponName = weapon.Nom
+		phys = weapon.DegatsPhysiques
+		mag = weapon.DegatsMagiques
+		critW = weapon.TauxCritique * 100
+	} else if currentPlayer.ArmeEquipee.Nom != "" {
+		weaponName = currentPlayer.ArmeEquipee.Nom
+		phys = currentPlayer.ArmeEquipee.DegatsPhysiques
+		mag = currentPlayer.ArmeEquipee.DegatsMagiques
+		critW = currentPlayer.ArmeEquipee.TauxCritique * 100
+	}
+
+	// Armure équipée : même logique de fallback
+	armorName := "Aucune"
+	armorDef, armorRes, armorHP := 0, 0, 0
+	if currentPlayer.ArmureEquipee.Nom == "" && currentPlayer.NiveauArmure >= 0 && currentPlayer.NiveauArmure < len(currentPlayer.ArmuresDisponibles) {
+		arm := currentPlayer.ArmuresDisponibles[currentPlayer.NiveauArmure]
+		armorName = arm.Nom
+		armorDef = arm.Defense
+		armorRes = arm.Resistance
+		armorHP = arm.HP
+	} else if currentPlayer.ArmureEquipee.Nom != "" {
+		arm := currentPlayer.ArmureEquipee
+		armorName = arm.Nom
+		armorDef = arm.Defense
+		armorRes = arm.Resistance
+		armorHP = arm.HP
+	}
+	playerLines := []string{
+		"🧝 === JOUEUR ===",
+		fmt.Sprintf("👤 %s", currentPlayer.Nom),
+		fmt.Sprintf("❤️ PV: %d/%d", currentPlayer.PV, currentPlayer.PVMax),
+		fmt.Sprintf("🛡️ Armure Totale: %d", currentPlayer.Armure),
+		fmt.Sprintf("🔮 Résist. Mag Totale: %d", currentPlayer.ResistMag),
+		fmt.Sprintf("🎯 Précision: %.0f%%", currentPlayer.Precision*100),
+		fmt.Sprintf("💥 Crit Base: %.0f%% x%.2f", currentPlayer.TauxCritique*100, currentPlayer.MultiplicateurCrit),
 		"",
-		"🏆 === BONUS ===",
+		"⚔️ === ARME ===",
+		fmt.Sprintf("Nom: %s", weaponName),
+		fmt.Sprintf("Phys/Mag: %d / %d", phys, mag),
+		fmt.Sprintf("Crit Arme: %.0f%%", critW),
+		"",
+		"🛡️ === ARMURE ===",
+		fmt.Sprintf("Nom: %s", armorName),
+		fmt.Sprintf("Déf/Res: %d / %d", armorDef, armorRes),
+		fmt.Sprintf("Bonus PV: %d", armorHP),
 	}
-
-	if playerStats.hasLegendaryWeapon {
-		infoLines = append(infoLines, "🌟 Excalibur (+50% ATK)")
+	if playerStats.attackBoost > 0 {
+		playerLines = append(playerLines, fmt.Sprintf("📈 Boost ATK: +%d%%", playerStats.attackBoost))
+	}
+	if playerInventory["potions"] > 0 {
+		playerLines = append(playerLines, fmt.Sprintf("🧪 Potions: %d", playerInventory["potions"]))
+	}
+	// Ancienne colonne 3 : compétences -> intégrée sous les statistiques (infoLines)
+	compLines := []string{"", "🗡️ === COMPÉTENCES ==="}
+	var displayWeapon Arme
+	if currentPlayer.ArmeEquipee.Nom != "" {
+		displayWeapon = currentPlayer.ArmeEquipee
+	} else if currentPlayer.NiveauArme >= 0 && currentPlayer.NiveauArme < len(currentPlayer.ArmesDisponibles) {
+		displayWeapon = currentPlayer.ArmesDisponibles[currentPlayer.NiveauArme]
+	}
+	if displayWeapon.Nom == "" || len(displayWeapon.Competences) == 0 {
+		compLines = append(compLines, "(Aucune compétence)")
 	} else {
-		infoLines = append(infoLines, "🌟 Pas d'arme légendaire")
+		for _, c := range displayWeapon.Competences {
+			line := fmt.Sprintf("• %s [%s %d", c.Nom, shortType(c.Type), c.Degats)
+			if c.TypeEffet != "" {
+				line += fmt.Sprintf(" | %s", abbrevEffet(c.TypeEffet))
+			}
+			line += "]"
+			compLines = append(compLines, line)
+		}
+	}
+	// Fusion : ajouter compLines à la suite des infoLines
+	infoLines = append(infoLines, compLines...)
+
+	// Largeurs & itérations (désormais 2 colonnes : stats+compétences et joueur)
+	mapHeight := len(mapData)
+	maxLines := mapHeight
+	for _, l := range []int{len(infoLines), len(playerLines)} {
+		if l > maxLines {
+			maxLines = l
+		}
 	}
 
-	// Affiche la carte avec les infos côte à côte
-	mapHeight := len(mapData)
-	maxLines := max(mapHeight, len(infoLines))
-
-	cellWidth := 2 // Largeur cible minimale visuelle
+	cellWidth := 2
 	if useASCII {
 		cellWidth = 1
 	}
 
+	// Calcul largeurs des colonnes texte (1=info+comp, 2=player)
+	col1Width, col2Width := 0, 0
+	for _, l := range infoLines {
+		if w := runewidth.StringWidth(l); w > col1Width {
+			col1Width = w
+		}
+	}
+	for _, l := range playerLines {
+		if w := runewidth.StringWidth(l); w > col2Width {
+			col2Width = w
+		}
+	}
+
+	// Largeur fixe de la partie carte pour aligner les séparateurs
+	// (Empêche le décalage vertical des lignes blanches dû à la variation de largeur des emojis.)
+	mapLineWidth := len(mapData[0]) * (cellWidth + 1) // chaque case = 1 espace + symbole (et pad)
 	for i := 0; i < maxLines; i++ {
+		var mapLine string
 		if i < mapHeight {
 			var b strings.Builder
-			for j, val := range mapData[i] {
-				sym := cellToSymbol(val, j, i, currentMap)
+			for _, val := range mapData[i] {
+				sym := cellToSymbol(val)
 				w := runewidth.StringWidth(sym)
 				pad := cellWidth - w
 				if pad < 0 {
 					pad = 0
 				}
-				// Un espace devant pour aérer
 				b.WriteString(" ")
 				b.WriteString(sym)
 				b.WriteString(strings.Repeat(" ", pad))
 			}
-			fmt.Print(b.String())
+			mapLine = b.String()
 		} else {
-			// Ligne vide alignée
-			lineWidth := len(mapData[0]) * (cellWidth + 1)
-			fmt.Print(strings.Repeat(" ", lineWidth))
+			mapLine = strings.Repeat(" ", mapLineWidth)
+		}
+		// Normalise la longueur pour éviter les décalages dus à des largeurs de runes imprévues
+		currentWidth := runewidth.StringWidth(mapLine)
+		if currentWidth < mapLineWidth {
+			mapLine += strings.Repeat(" ", mapLineWidth-currentWidth)
+		}
+		fmt.Print(mapLine)
+
+		// Colonnes texte (2 colonnes désormais)
+		fmt.Print("   │ ")
+		c1 := ""
+		if i < len(infoLines) {
+			c1 = infoLines[i]
+		}
+		fmt.Print(c1)
+		if pad := col1Width - runewidth.StringWidth(c1); pad > 0 {
+			fmt.Print(strings.Repeat(" ", pad))
 		}
 
-		fmt.Print("   │   ")
-		if i < len(infoLines) {
-			fmt.Print(infoLines[i])
+		fmt.Print(" │ ")
+		c2 := ""
+		if i < len(playerLines) {
+			c2 = playerLines[i]
+		}
+		fmt.Print(c2)
+		if pad := col2Width - runewidth.StringWidth(c2); pad > 0 {
+			fmt.Print(strings.Repeat(" ", pad))
 		}
 		fmt.Println()
 	}
 
-	// Ligne de séparation
 	fmt.Println("═══════════════════════════════════════════════════════════════════════")
 }
 
 // Affiche un HUD compact pour l'inventaire uniquement
-func showCompactInventory() {
-	// Compte des artefacts équipés
-	artCount := 0
-	for _, a := range currentPlayer.ArtefactsEquipes {
-		if a != nil {
-			artCount++
-		}
-	}
-
-	fmt.Printf("💰:%d 🔑:%d 🗝️:%d 💊:%d 🪨:%d",
-		playerInventory["pièces"],
-		playerInventory["clés"],
-		playerInventory["clés_spéciales"],
-		playerInventory["puff_9k"],
-		currentPlayer.Roches)
-	if artCount > 0 {
-		fmt.Printf(" 🧿:%d", artCount)
-	}
-	if playerStats.hasLegendaryWeapon {
-		fmt.Print(" 🌟:Excalibur")
-	}
-	fmt.Println()
-}
-
-// Fonction helper pour max
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
+// (Ancien HUD compact et helpers supprimés car non utilisés après refonte inventaire)
 
 // Trouve le joueur
 func findPlayer(mapData [][]int) (int, int) {
@@ -308,6 +440,16 @@ func placePlayerNearby(mapData [][]int, targetX, targetY int) {
 func generateRandomMobs(mapData [][]int) {
 	randomMobsSalle3 = []struct{ x, y int }{}
 
+	// Sécurité: dimensions minimales
+	h := len(mapData)
+	if h == 0 {
+		return
+	}
+	w := len(mapData[0])
+	if w < 3 || h < 3 { // trop petit pour placement intérieur
+		return
+	}
+
 	// génère entre minRandomMobsSalle3 et maxRandomMobsSalle3 (inclus)
 	rangeSize := maxRandomMobsSalle3 - minRandomMobsSalle3 + 1
 	if rangeSize < 1 {
@@ -317,9 +459,14 @@ func generateRandomMobs(mapData [][]int) {
 	attempts := 0
 	maxAttempts := 200
 
+	innerW := w - 2
+	innerH := h - 2
+	if innerW <= 0 || innerH <= 0 {
+		return
+	}
 	for len(randomMobsSalle3) < numMobs && attempts < maxAttempts {
-		x := 1 + rand.Intn(13)
-		y := 1 + rand.Intn(12)
+		x := 1 + rand.Intn(innerW)
+		y := 1 + rand.Intn(innerH)
 
 		if mapData[y][x] == 0 {
 			isOccupied := false
@@ -333,16 +480,6 @@ func generateRandomMobs(mapData [][]int) {
 			if !isOccupied {
 				randomMobsSalle3 = append(randomMobsSalle3, struct{ x, y int }{x, y})
 				mapData[y][x] = 2
-				// Assigner un type d'ennemi aléatoire selon le tier de la salle
-				pool := tutorialPool // fallback
-				if tierForMap("salle3") == TierEarly {
-					pool = earlyPool
-				}
-				if len(pool) > 0 {
-					chosen := pool[rand.Intn(len(pool))]
-					key := fmt.Sprintf("%d_%d", x, y)
-					enemyAssignments["salle3"][key] = chosen.Name
-				}
 			}
 		}
 		attempts++
@@ -385,13 +522,6 @@ func generateRandomMobsSalle2(mapData [][]int) {
 			if !isOccupied {
 				randomMobsSalle2 = append(randomMobsSalle2, struct{ x, y int }{x, y})
 				mapData[y][x] = 2
-				// Assigner un type d'ennemi aléatoire selon le tier de la salle
-				pool := earlyPool
-				if len(pool) > 0 {
-					chosen := pool[rand.Intn(len(pool))]
-					key := fmt.Sprintf("%d_%d", x, y)
-					enemyAssignments["salle2"][key] = chosen.Name
-				}
 			}
 		}
 		attempts++
@@ -426,13 +556,6 @@ func generateRandomMobsSalle9(mapData [][]int) {
 		// Placer uniquement sur sol vide (0), éviter portes/marqueurs
 		if mapData[y][x] == 0 {
 			mapData[y][x] = 2
-			// Assigner un type d'ennemi aléatoire selon le tier Late
-			pool := latePool
-			if len(pool) > 0 {
-				chosen := pool[rand.Intn(len(pool))]
-				key := fmt.Sprintf("%d_%d", x, y)
-				enemyAssignments["salle9"][key] = chosen.Name
-			}
 			placed++
 		}
 		attempts++
