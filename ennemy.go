@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math"
 	"math/rand"
 )
 
@@ -20,7 +21,11 @@ type EnemyTemplate struct {
 	Name   string
 	Base   Personnage
 	Weapon Arme
+	Armor  Armure
 }
+
+// Modeste buff global des armures ennemies
+const EnemyArmorStatMultiplier = 1.15
 
 // Crée un ennemi à partir d'un template, avec option « super » qui scale un peu les stats
 func NewEnemyFromTemplate(t EnemyTemplate, isSuper bool) Personnage {
@@ -28,6 +33,16 @@ func NewEnemyFromTemplate(t EnemyTemplate, isSuper bool) Personnage {
 	p := t.Base
 	// équipe l'arme (ajoute la précision/critique de l'arme et définit les compétences)
 	_ = EquiperArme(&p, t.Weapon)
+	// équipe l'armure dédiée à l'ennemi avec un léger buff
+	buffDefense := int(math.Ceil(float64(t.Armor.Defense) * EnemyArmorStatMultiplier))
+	buffResist := int(math.Ceil(float64(t.Armor.Resistance) * EnemyArmorStatMultiplier))
+	buffHP := int(math.Ceil(float64(t.Armor.HP) * EnemyArmorStatMultiplier))
+	buffed := Armure{Nom: t.Armor.Nom, Defense: buffDefense, Resistance: buffResist, HP: buffHP}
+	p.ArmureEquipee = buffed
+	p.Armure += buffed.Defense
+	p.ResistMag += buffed.Resistance
+	p.PVMax += buffed.HP
+	p.PV += buffed.HP
 
 	if isSuper {
 		// Léger scaling pour les ennemis surpuissants
@@ -61,7 +76,8 @@ var TutoRat = EnemyTemplate{
 		TauxCritique:       0.05,
 		MultiplicateurCrit: 1.4,
 	},
-	Weapon: epeeBois, // une morsure déguisée en petite attaque physique
+	Weapon: armeMorsureRat, // arme dédiée
+	Armor:  armureRat,
 }
 
 var TutoSlime = EnemyTemplate{
@@ -76,7 +92,8 @@ var TutoSlime = EnemyTemplate{
 		TauxCritique:       0.02,
 		MultiplicateurCrit: 1.3,
 	},
-	Weapon: lancePierre,
+	Weapon: armeProjectionSlime,
+	Armor:  armureSlime,
 }
 
 // — Early game — facile
@@ -92,7 +109,8 @@ var EarlyBrigand = EnemyTemplate{
 		TauxCritique:       0.10,
 		MultiplicateurCrit: 1.5,
 	},
-	Weapon: couteauCuisine,
+	Weapon: armeDagueBrigand,
+	Armor:  armureBrigand,
 }
 
 var EarlyArcher = EnemyTemplate{
@@ -107,7 +125,8 @@ var EarlyArcher = EnemyTemplate{
 		TauxCritique:       0.18,
 		MultiplicateurCrit: 1.6,
 	},
-	Weapon: arcBois,
+	Weapon: armeArcRecu,
+	Armor:  armureArcher,
 }
 
 var EarlyPyro = EnemyTemplate{
@@ -122,7 +141,8 @@ var EarlyPyro = EnemyTemplate{
 		TauxCritique:       0.12,
 		MultiplicateurCrit: 1.5,
 	},
-	Weapon: briquet,
+	Weapon: armeBatonPyro,
+	Armor:  armureApprentiPyro,
 }
 
 // — Mid game — moyen
@@ -138,7 +158,8 @@ var MidChevalier = EnemyTemplate{
 		TauxCritique:       0.12,
 		MultiplicateurCrit: 1.6,
 	},
-	Weapon: epeeFer,
+	Weapon: armeLameChevalier,
+	Armor:  armureChevalier,
 }
 
 var MidBerserker = EnemyTemplate{
@@ -153,7 +174,8 @@ var MidBerserker = EnemyTemplate{
 		TauxCritique:       0.20,
 		MultiplicateurCrit: 1.75,
 	},
-	Weapon: hacheoir,
+	Weapon: armeHacheBerserker,
+	Armor:  armureBerserker,
 }
 
 var MidMage = EnemyTemplate{
@@ -168,7 +190,8 @@ var MidMage = EnemyTemplate{
 		TauxCritique:       0.22,
 		MultiplicateurCrit: 1.7,
 	},
-	Weapon: foudreSombre,
+	Weapon: armeSceptreSombre,
+	Armor:  armureMageSombre,
 }
 
 // — Late game — dur
@@ -184,7 +207,8 @@ var LateSeigneurDemon = EnemyTemplate{
 		TauxCritique:       0.28,
 		MultiplicateurCrit: 1.9,
 	},
-	Weapon: epeeNetherite,
+	Weapon: armeLameDemone,
+	Armor:  armureSeigneurDemon,
 }
 
 var LateArchimage = EnemyTemplate{
@@ -199,7 +223,8 @@ var LateArchimage = EnemyTemplate{
 		TauxCritique:       0.35,
 		MultiplicateurCrit: 2.0,
 	},
-	Weapon: foudreDivine,
+	Weapon: armeBatonArchimage,
+	Armor:  armureArchimage,
 }
 
 var LateChampion = EnemyTemplate{
@@ -214,7 +239,8 @@ var LateChampion = EnemyTemplate{
 		TauxCritique:       0.30,
 		MultiplicateurCrit: 1.85,
 	},
-	Weapon: katanaLameCeleste,
+	Weapon: armeLameDuChampion,
+	Armor:  armureChampion,
 }
 
 // Pools par tier

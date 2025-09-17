@@ -119,24 +119,6 @@ func buildPlayerCharacter() Personnage {
 	return p
 }
 
-// fabrique un ennemi générique en fonction du niveau de menace
-func buildEnemy(isSuper bool) Personnage {
-	base := Personnage{
-		Nom:                "Créature",
-		PV:                 8,
-		PVMax:              8,
-		Armure:             10,
-		ResistMag:          8,
-		Precision:          0.80,
-		TauxCritique:       0.10,
-		MultiplicateurCrit: 1.5,
-	}
-	// Arme simple pour l'ennemi
-	arme := epeePierre
-	_ = EquiperArme(&base, arme)
-	return base
-}
-
 // réalise une attaque avec calcul précision/crit/type en utilisant les helpers de degats.go
 func resolveAttack(attaquant, defenseur *Personnage, degatsBase int, typeAttaque string) (degats int, touche bool, crit bool) {
 	d, estCrit, aTouche := CalculerDegatsAvecCritique(attaquant, defenseur, degatsBase, typeAttaque)
@@ -155,6 +137,26 @@ func pickCompetence(p *Personnage) (Competence, bool) {
 		}
 	}
 	return p.ArmeEquipee.Competences[0], true
+}
+
+// Sélection aléatoire d'une compétence pour l'IA ennemie
+//   - 70%: privilégie une compétence avec dégâts (>0) si disponible
+//   - 30%: choix totalement aléatoire (utilitaire/buff compris)
+func pickRandomCompetence(p *Personnage) (Competence, bool) {
+	comps := p.ArmeEquipee.Competences
+	if len(comps) == 0 {
+		return Competence{}, false
+	}
+	offensives := make([]Competence, 0, len(comps))
+	for _, c := range comps {
+		if c.Degats > 0 {
+			offensives = append(offensives, c)
+		}
+	}
+	if len(offensives) > 0 && rand.Intn(100) < 70 {
+		return offensives[rand.Intn(len(offensives))], true
+	}
+	return comps[rand.Intn(len(comps))], true
 }
 
 // applique un effet éventuel sur la cible en fonction de la compétence
@@ -178,10 +180,10 @@ func isSelfBuff(effectName string) bool {
 }
 
 // propose la liste des compétences de l'arme et retourne le choix de l'utilisateur
-func chooseCompetence(p *Personnage) (Competence, bool) {
+func chooseCompetence(p *Personnage) (Competence, bool, bool) {
 	comps := p.ArmeEquipee.Competences
 	if len(comps) == 0 {
-		return Competence{}, false
+		return Competence{}, false, false
 	}
 	fmt.Println("\nChoisissez une compétence:")
 	for i, c := range comps {
@@ -192,22 +194,29 @@ func chooseCompetence(p *Personnage) (Competence, bool) {
 		}
 		fmt.Printf("  %d) %s [%s] Dégâts:%d%s\n", i+1, c.Nom, c.Type, c.Degats, extra)
 	}
-	fmt.Print("Votre choix (1-", len(comps), "): ")
+	fmt.Println("  R) Retour")
+	fmt.Print("Votre choix (1-", len(comps), " ou R): ")
 	// Lire une seule touche depuis le canal global
 	if globalKeyEvents == nil {
 		// Fallback extrême si le canal n'est pas prêt
-		return comps[0], true
+		return comps[0], true, false
 	}
 	e := <-globalKeyEvents
+	if e.Key == keyboard.KeyEsc {
+		return Competence{}, false, true
+	}
 	r := e.Rune
+	if r == 'r' || r == 'R' {
+		return Competence{}, false, true
+	}
 	if r >= '1' && r <= '9' {
 		idx := int(r - '0')
 		if idx >= 1 && idx <= len(comps) {
-			return comps[idx-1], true
+			return comps[idx-1], true, false
 		}
 	}
 	fmt.Println("Saisie invalide, compétence par défaut utilisée.")
-	return comps[0], true
+	return comps[0], true, false
 }
 
 // Sous-menu Objets (potion, Puff 9K, etc.) — n'utilise pas le tour
@@ -544,8 +553,8 @@ func combat(currentMap string, isSuper bool) interface{} {
 			fmt.Println("🌟 Excalibur équipée (+50% dégâts de loot)")
 		}
 
-		// Affichage des actions (Objets via sous-menu, Défense intégrée)
-		fmt.Println("Actions: [A]ttaquer, [D]éfendre, [O]bjet, [F]uir")
+		// Affichage des actions (Objets via sous-menu)
+		fmt.Println("Actions: [A]ttaquer, [O]bjet, [F]uir")
 		fmt.Print("Choisissez une action: ")
 		// Utilise le même canal que la boucle de jeu
 		if globalKeyEvents == nil {
@@ -564,7 +573,11 @@ func combat(currentMap string, isSuper bool) interface{} {
 		switch input {
 		case "a":
 			// Sélection de compétence
-			comp, ok := chooseCompetence(&player)
+			comp, ok, back := chooseCompetence(&player)
+			if back {
+				// Retour au menu principal sans consommer le tour
+				continue
+			}
 			if !ok {
 				// Fallback absolument minimal
 				comp = Competence{Nom: "Attaque", Degats: 15, Type: "physique"}
@@ -612,13 +625,6 @@ func combat(currentMap string, isSuper bool) interface{} {
 				}
 			}
 
-		case "d":
-			fmt.Println("🛡️  Vous vous défendez !")
-			// La défense réduit les dégâts du prochain coup ennemi
-			// On simule un bouclier temporaire stocké dans un effet léger
-			shield := Effet{Nom: "Bouclier", ToursRestants: 1, ModifArmure: 0.30, ChanceAppliquer: 1.0}
-			AppliquerEffet(&player, shield)
-			// Pas d'attaque joueur ce tour, on enchaîne vers l'ennemi
 		case "o":
 			// Sous-menu objets: n'utilise pas le tour
 			if died := objectMenu(&player, &enemy); died {
@@ -654,7 +660,7 @@ func combat(currentMap string, isSuper bool) interface{} {
 				}
 				currentPlayer.PV = player.PV
 				playerStats.attackBoost = 0
-				fmt.Println("� La créature disparaît complètement dans un nuage de fumée...")
+				fmt.Println("💨 La créature disparaît complètement dans un nuage de fumée...")
 				return "disappear"
 			}
 			// Sinon, ne consomme pas le tour ennemi
@@ -721,8 +727,8 @@ func combat(currentMap string, isSuper bool) interface{} {
 		if EstEtourdi(&enemy) {
 			fmt.Println("😵‍💫 L'ennemi est étourdi et rate son tour !")
 		} else {
-			// L'ennemi tente une compétence simple si disponible
-			ecomp, ok := pickCompetence(&enemy)
+			// L'ennemi choisit une compétence au hasard (biais offensif)
+			ecomp, ok := pickRandomCompetence(&enemy)
 			edeg := enemyAttackBase
 			etype := "physique"
 			if ok {
@@ -747,7 +753,15 @@ func combat(currentMap string, isSuper bool) interface{} {
 					fmt.Printf("💥 L'ennemi vous inflige %d dégâts.\n", edmg)
 				}
 				if ok {
-					maybeApplyEffect(&player, ecomp)
+					// Buff/soin sur soi → appliqué à l'ennemi, sinon effet offensif sur le joueur
+					if ecomp.Degats <= 0 && ecomp.TypeEffet != "" && isSelfBuff(ecomp.TypeEffet) {
+						if eff := CreerEffet(ecomp.TypeEffet, ecomp.Puissance); eff != nil {
+							AppliquerEffet(&enemy, *eff)
+							fmt.Printf("✨ L'ennemi s'applique %s.\n", ecomp.Nom)
+						}
+					} else if ecomp.TypeEffet != "" {
+						maybeApplyEffect(&player, ecomp)
+					}
 				}
 			}
 		}
@@ -835,7 +849,7 @@ func combatWithAssignedType(currentMap string, isSuper bool, name string) interf
 			fmt.Println("🌟 Excalibur équipée (+50% dégâts de loot)")
 		}
 
-		fmt.Println("Actions: [A]ttaquer, [D]éfendre, [O]bjet, [F]uir")
+		fmt.Println("Actions: [A]ttaquer, [O]bjet, [F]uir")
 		fmt.Print("Choisissez une action: ")
 		if globalKeyEvents == nil {
 			fmt.Println("(clavier non initialisé)")
@@ -851,7 +865,10 @@ func combatWithAssignedType(currentMap string, isSuper bool, name string) interf
 
 		switch input {
 		case "a":
-			comp, ok := chooseCompetence(&player)
+			comp, ok, back := chooseCompetence(&player)
+			if back {
+				continue
+			}
 			if !ok {
 				comp = Competence{Nom: "Attaque", Degats: 15, Type: "physique"}
 			}
@@ -890,10 +907,6 @@ func combatWithAssignedType(currentMap string, isSuper bool, name string) interf
 					fmt.Println("🙃 Votre attaque rate sa cible !")
 				}
 			}
-		case "d":
-			fmt.Println("🛡️  Vous vous défendez !")
-			shield := Effet{Nom: "Bouclier", ToursRestants: 1, ModifArmure: 0.30, ChanceAppliquer: 1.0}
-			AppliquerEffet(&player, shield)
 		case "o":
 			if died := objectMenu(&player, &enemy); died {
 				currentPlayer.PV = player.PV
@@ -975,7 +988,7 @@ func combatWithAssignedType(currentMap string, isSuper bool, name string) interf
 		if EstEtourdi(&enemy) {
 			fmt.Println("😵‍💫 L'ennemi est étourdi et rate son tour !")
 		} else {
-			ecomp, ok := pickCompetence(&enemy)
+			ecomp, ok := pickRandomCompetence(&enemy)
 			edeg := enemyAttackBase
 			etype := "physique"
 			if ok {
@@ -1000,7 +1013,14 @@ func combatWithAssignedType(currentMap string, isSuper bool, name string) interf
 					fmt.Printf("💥 L'ennemi vous inflige %d dégâts.\n", edmg)
 				}
 				if ok {
-					maybeApplyEffect(&player, ecomp)
+					if ecomp.Degats <= 0 && ecomp.TypeEffet != "" && isSelfBuff(ecomp.TypeEffet) {
+						if eff := CreerEffet(ecomp.TypeEffet, ecomp.Puissance); eff != nil {
+							AppliquerEffet(&enemy, *eff)
+							fmt.Printf("✨ L'ennemi s'applique %s.\n", ecomp.Nom)
+						}
+					} else if ecomp.TypeEffet != "" {
+						maybeApplyEffect(&player, ecomp)
+					}
 				}
 			}
 		}
