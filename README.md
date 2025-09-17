@@ -41,3 +41,31 @@ go build .
 3. **Lancer le jeu**
 ```bash
 Go run .
+
+---
+
+## 🆕 Classe spéciale : Vitaly
+
+| Attribut | Valeur |
+|----------|--------|
+| PV | 200 |
+| Armure | 30 |
+| Résistance Magique | 50 |
+| Précision | 100% (1.00) |
+| Taux Critique | 90% |
+| Multiplicateur Critique | x4.0 |
+
+### Armes de progression
+1. Flash de Vodka — Départ rapide, brûlure légère.
+2. Bouteille de Vodka — Mélange physique + feu, bonne précision et critique.
+3. Griffe d'Ours — Orientation saignement + contrôle (nébulation).
+4. Apocalypse Vodka — Arme finale hybride : dégâts massifs, brûlure, brise-armure et affaiblissement.
+
+### Armure (Ensemble Adidas)
+Progression orientée défense magique et PV bonus :
+- Classique → Renforcé → Légendaire → Ultime.
+
+### Artefact exclusif
+Vodka de Vitaly : +50% à toutes les stats offensives et défensives (précision, critique, dégâts physiques, dégâts magiques, armure, résistance magique). Équipé automatiquement au début de la partie si vous choisissez Vitaly.
+
+---

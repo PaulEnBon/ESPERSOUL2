@@ -215,13 +215,13 @@ func chooseCompetence(p *Personnage) (Competence, bool) {
 func objectMenu(player, enemy *Personnage) bool {
 	for {
 		fmt.Println("\n🎒 Objets:")
-	// Soins
-	fmt.Printf("  1) Potion (x%d) — +70 PV\n", playerInventory["potions"])
-	fmt.Printf("  2) Potion Mineure (x%d) — soin léger\n", playerInventory["potion_mineure"])
-	fmt.Printf("  3) Potion Majeure (x%d) — soin puissant\n", playerInventory["potion_majeure"])
-	fmt.Printf("  4) Potion Suprême (x%d) — soin massif\n", playerInventory["potion_supreme"])
-	fmt.Printf("  5) Antidote (x%d) — retire poison\n", playerInventory["antidote"])
-	fmt.Printf("  V) Vodka de Vitaly (x%d) — régénère toute la vie !\n", playerInventory["vodka_vitaly"])
+		// Soins
+		fmt.Printf("  1) Potion (x%d) — +70 PV\n", playerInventory["potions"])
+		fmt.Printf("  2) Potion Mineure (x%d) — soin léger\n", playerInventory["potion_mineure"])
+		fmt.Printf("  3) Potion Majeure (x%d) — soin puissant\n", playerInventory["potion_majeure"])
+		fmt.Printf("  4) Potion Suprême (x%d) — soin massif\n", playerInventory["potion_supreme"])
+		fmt.Printf("  5) Antidote (x%d) — retire poison\n", playerInventory["antidote"])
+		fmt.Printf("  V) Vodka de Vitaly (x%d) — régénère toute la vie !\n", playerInventory["vodka_vitaly"])
 		// Buffs
 		fmt.Printf("  6) Puff 9K (x%d) — +15%%%% dégâts (loot) + buff, -5 PV\n", playerInventory["puff_9k"])
 		fmt.Printf("  7) Élixir de Force (x%d) — buff dégâts\n", playerInventory["elixir_force"])
@@ -479,6 +479,27 @@ func combat(currentMap string, isSuper bool) interface{} {
 	player := buildPlayerCharacter()
 	enemy := CreateRandomEnemyForMap(currentMap, isSuper)
 
+	// Boss final personnalisé pour salle15
+	if currentMap == "salle15" {
+		// Définition explicite du boss final (ignorer le scaling générique ensuite)
+		custom := Personnage{
+			Nom:                "Mia Khalifa",
+			PV:                 69,
+			PVMax:              69,
+			Armure:             69,
+			ResistMag:          69,
+			Precision:          0.90,
+			TauxCritique:       0.69,
+			MultiplicateurCrit: 1.8,
+		}
+		// Équipe l'arme foutre de Zeus
+		_ = EquiperArme(&custom, foutreDeZeus)
+		// Ajuste les dégâts pour refléter "69 attaque"
+		custom.ArmeEquipee.DegatsPhysiques = 69
+		custom.ArmeEquipee.DegatsMagiques = 69
+		enemy = custom
+	}
+
 	// Scaling supplémentaire pour salles boss progressives
 	levelMultiplier := 1.0
 	switch currentMap {
@@ -489,7 +510,8 @@ func combat(currentMap string, isSuper bool) interface{} {
 	case "salle14":
 		levelMultiplier = 1.9 // Niveau 3/4
 	case "salle15":
-		levelMultiplier = 2.4 // Niveau 4/4
+		// Pas de scaling : boss déjà défini avec ses stats personnalisées
+		levelMultiplier = 1.0
 	}
 	if levelMultiplier > 1.0 {
 		enemy.PV = int(float64(enemy.PV) * levelMultiplier)

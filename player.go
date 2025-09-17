@@ -31,6 +31,7 @@ var playerInventory = map[string]int{
 	"elixir_vitesse":       0,
 	"elixir_critique":      0,
 	"antidote":             0,
+	"sida":                 0, // Objet spécial drop boss final
 	"vodka_vitaly":         0, // Potion qui régénère toute la vie
 }
 

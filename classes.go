@@ -281,3 +281,51 @@ var Poseidon = Personnage{
 	},
 	ArmuresDisponibles: ArmuresPoseidon,
 }
+
+// ==========================
+// CLASSE ERWANN (spécial)
+// ==========================
+var Erwann = Personnage{
+	Nom:                "Erwann",
+	PV:                 500,
+	PVMax:              500,
+	Armure:             30,
+	ResistMag:          30,
+	Precision:          0.10,
+	TauxCritique:       0.10,
+	MultiplicateurCrit: 1.5,
+	ArmesDisponibles:   ArmesErwann,
+	ArmuresDisponibles: ArmuresErwann,
+}
+
+// ==========================
+// CLASSE GABRIEL (archange tank-magie)
+// ==========================
+var Gabriel = Personnage{
+	Nom:                "Gabriel",
+	PV:                 1000,
+	PVMax:              1000,
+	Armure:             100,
+	ResistMag:          100,
+	Precision:          0.80,
+	TauxCritique:       0.30,
+	MultiplicateurCrit: 2.0,
+	ArmesDisponibles:   ArmesGabriel,
+	ArmuresDisponibles: ArmuresGabriel,
+}
+
+// ==========================
+// CLASSE VITALY (critique extrême + précision parfaite)
+// ==========================
+var Vitaly = Personnage{
+	Nom:                "Vitaly",
+	PV:                 200,
+	PVMax:              200,
+	Armure:             30,
+	ResistMag:          50,
+	Precision:          1.00,
+	TauxCritique:       0.90,
+	MultiplicateurCrit: 4.0,
+	ArmesDisponibles:   ArmesVitaly,
+	ArmuresDisponibles: ArmuresVitaly,
+}

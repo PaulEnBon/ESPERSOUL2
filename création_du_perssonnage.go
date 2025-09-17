@@ -19,6 +19,9 @@ func Création_du_perssonnage(pages *tview.Pages) tview.Primitive {
 			"Engineer",
 			"Manager",
 			"Administration",
+			"Erwann",
+			"Gabriel",
+			"Vitaly",
 		}, 0, nil).
 		AddDropDown("Artéfact:", []string{
 			"ytftyfyty",

@@ -28,6 +28,10 @@ func CalculerPrecision(personnage *Personnage) float64 {
 
 // Vérifie si une attaque touche ou est esquivée
 func AttaqueReussie(attaquant *Personnage) bool {
+	// Si l'artefact 'Lunette d'Erwann' est équipé => touche toujours
+	if PossedeArtefact(attaquant, "Lunette d'Erwann") {
+		return true
+	}
 	rand.Seed(time.Now().UnixNano())
 	tauxPrecision := CalculerPrecision(attaquant)
 	return rand.Float64() < tauxPrecision

@@ -221,6 +221,24 @@ var ArtefactsDisponibles = []Artefact{
 	{Nom: "Sceau de Focalisation", Description: "Supprime Nébulation et Défavorisation au début de chaque tour.", Effet: Effet{ToursRestants: 999}},
 	{Nom: "Glyphe de Bastion", Description: "Supprime Brise-Armure et Brise-Armure Magique au début de chaque tour.", Effet: Effet{ToursRestants: 999}},
 	{Nom: "Cachet de Détermination", Description: "Supprime les débuffs d'attaque (ex: Peur) au début de chaque tour.", Effet: Effet{ToursRestants: 999}},
+	// Artefact exclusif Gabriel
+	{
+		Nom:         "Halo de Gabriel",
+		Description: "Puissance sacrée: +10% à toutes les stats offensives et défensives.",
+		Effet:       Effet{ToursRestants: 999, ModifPrecision: 0.10, ModifCritique: 0.10, ModifDegats: 0.10, ModifDegatsMag: 0.10, ModifArmure: 0.10, ModifResistMag: 0.10},
+	},
+	// --- Nouvel artefact spécial ---
+	{
+		Nom:         "Lunette d'Erwann",
+		Description: "Vision parfaite: +90% précision et touche toujours.",
+		Effet:       Effet{ToursRestants: 999, ModifPrecision: 0.90},
+	},
+	// Artefact exclusif Vitaly
+	{
+		Nom:         "Vodka de Vitaly",
+		Description: "Puissance brute alcoolisée: +50% à toutes les stats offensives et défensives.",
+		Effet:       Effet{ToursRestants: 999, ModifPrecision: 0.50, ModifCritique: 0.50, ModifDegats: 0.50, ModifDegatsMag: 0.50, ModifArmure: 0.50, ModifResistMag: 0.50},
+	},
 }
 
 // --- Helpers supplémentaires ---

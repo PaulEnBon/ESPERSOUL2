@@ -56,6 +56,12 @@ func getBaseTemplateByName(name string) (Personnage, bool) {
 		return Bambi, true
 	case Poseidon.Nom:
 		return Poseidon, true
+	case Erwann.Nom:
+		return Erwann, true
+	case Gabriel.Nom:
+		return Gabriel, true
+	case Vitaly.Nom:
+		return Vitaly, true
 	default:
 		return Personnage{}, false
 	}
@@ -256,6 +262,30 @@ var ArmesPoseidon = []Arme{
 	tridentPoseidon,
 }
 
+// Armes de Vitaly
+var ArmesVitaly = []Arme{
+	flashDeVodka,
+	bouteilleDeVodka,
+	griffeDOurs,
+	apocalypseVodka,
+}
+
+// Armes de Gabriel
+var ArmesGabriel = []Arme{
+	vergeCeleste,
+	lanceArchange,
+	trompeteJugement,
+	glaiveApocalypse,
+}
+
+// Armes de la classe Erwann
+var ArmesErwann = []Arme{
+	macMini,
+	macAir,
+	macPro,
+	pcDuCDI,
+}
+
 var ArmuresSoldat = []Armure{
 	{"Armure de Recrue", 10, 2, 10},
 	{"Cuirasse du Sergent", 17, 5, 20},
@@ -327,4 +357,28 @@ var ArmuresPoseidon = []Armure{
 	{"Armure de l’Abysse", 22, 16, 30},
 	{"Armure Royale de Poséidon", 30, 25, 45},
 	{"Armure du Souverain des Mers", 40, 34, 65},
+}
+
+// Armure Vitaly (Ensemble Adidas) progression (focus défense magique + critique élevé)
+var ArmuresVitaly = []Armure{
+	{"Ensemble Adidas Classique", 15, 20, 25},
+	{"Ensemble Adidas Renforcé", 25, 30, 40},
+	{"Ensemble Adidas Légendaire", 35, 40, 55},
+	{"Ensemble Adidas Ultime", 48, 55, 75},
+}
+
+// Armures de Gabriel (orienté ultra tank + PV massifs)
+var ArmuresGabriel = []Armure{
+	{"Toge Bénie", 25, 25, 120},
+	{"Plastron Séraphique", 35, 35, 180},
+	{"Armure des Archontes", 50, 50, 260},
+	{"Rempart Céleste", 65, 65, 350},
+}
+
+// Armures de la classe Erwann (équilibrées autour de tank techno)
+var ArmuresErwann = []Armure{
+	{"Coque Aluminium", 15, 12, 30},
+	{"Châssis Optimisé", 22, 18, 50},
+	{"Station de Travail", 30, 24, 80},
+	{"Serveur Blindé", 40, 32, 110},
 }

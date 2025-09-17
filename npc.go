@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 )
 
 // Dialogues des PNJ par salle et position avec récompenses
@@ -215,6 +216,28 @@ func showDialogue(currentMap string, x, y int) {
 
 		showGamblingInterface()
 		return
+	}
+
+	// Fin de jeu spéciale: salle1 PNJ (8,3) si item 'sida'
+	if currentMap == "salle1" && key == "8_3" && playerInventory["sida"] > 0 {
+		fmt.Println("\n💬 === DIALOGUE ===")
+		fmt.Println("👨 PNJ: ...Cet objet... D'où le tiens-tu ?")
+		fmt.Println("👨 PNJ: Si tu me le donnes, je pourrai briser définitivement la malédiction.")
+		fmt.Println("👨 PNJ: Veux-tu ME DONNER 'sida' et mettre fin au jeu ? (o/n)")
+		fmt.Print("Votre choix: ")
+		ans := readKey()
+		if ans == 'o' {
+			playerInventory["sida"]--
+			fmt.Println("✨ Le PNJ absorbe l'énergie sombre...")
+			fmt.Println("🏁 La malédiction est levée. Vous avez terminé le jeu !")
+			fmt.Println("Merci d'avoir joué.")
+			os.Exit(0)
+		} else {
+			fmt.Println("👨 PNJ: Très bien... Peut-être plus tard.")
+			fmt.Print("Appuyez sur une touche pour continuer...")
+			_ = readKey()
+			return
+		}
 	}
 
 	// Dialogue normal pour les autres PNJ
