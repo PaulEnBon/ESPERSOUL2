@@ -47,7 +47,8 @@ func showMerchantInterface() {
 		fmt.Println("6. Potion mineure - 3 pièces")
 		fmt.Println("7. Potion majeure - 10 pièces")
 		fmt.Println("8. Potion suprême - 25 pièces")
-		fmt.Println("9. Potion de dégâts - 6 pièces")
+	fmt.Println("9. Potion de dégâts - 6 pièces")
+	fmt.Println("h. Vodka de Vitaly - 50 pièces (régénère toute la vie)")
 		fmt.Println("a. Bombe incendiaire - 12 pièces")
 		fmt.Println("b. Bombe givrante - 14 pièces")
 		fmt.Println("c. Grenade fumigène - 8 pièces")
@@ -60,6 +61,14 @@ func showMerchantInterface() {
 		key := readKey()
 
 		switch key {
+		case 'h': // Vodka de Vitaly - 50 pièces
+			if playerInventory["pièces"] >= 50 {
+				playerInventory["pièces"] -= 50
+				playerInventory["vodka_vitaly"]++
+				fmt.Println("🍶 Vous avez acheté une Vodka de Vitaly ! Toute votre vie sera régénérée lors de son utilisation.")
+			} else {
+				fmt.Println("❌ Vous n'avez pas assez de pièces! (50 pièces nécessaires)")
+			}
 		case '1':
 			if playerInventory["pièces"] >= 5 {
 				playerInventory["pièces"] -= 5

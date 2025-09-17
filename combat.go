@@ -215,12 +215,13 @@ func chooseCompetence(p *Personnage) (Competence, bool) {
 func objectMenu(player, enemy *Personnage) bool {
 	for {
 		fmt.Println("\n🎒 Objets:")
-		// Soins
-		fmt.Printf("  1) Potion (x%d) — +70 PV\n", playerInventory["potions"])
-		fmt.Printf("  2) Potion Mineure (x%d) — soin léger\n", playerInventory["potion_mineure"])
-		fmt.Printf("  3) Potion Majeure (x%d) — soin puissant\n", playerInventory["potion_majeure"])
-		fmt.Printf("  4) Potion Suprême (x%d) — soin massif\n", playerInventory["potion_supreme"])
-		fmt.Printf("  5) Antidote (x%d) — retire poison\n", playerInventory["antidote"])
+	// Soins
+	fmt.Printf("  1) Potion (x%d) — +70 PV\n", playerInventory["potions"])
+	fmt.Printf("  2) Potion Mineure (x%d) — soin léger\n", playerInventory["potion_mineure"])
+	fmt.Printf("  3) Potion Majeure (x%d) — soin puissant\n", playerInventory["potion_majeure"])
+	fmt.Printf("  4) Potion Suprême (x%d) — soin massif\n", playerInventory["potion_supreme"])
+	fmt.Printf("  5) Antidote (x%d) — retire poison\n", playerInventory["antidote"])
+	fmt.Printf("  V) Vodka de Vitaly (x%d) — régénère toute la vie !\n", playerInventory["vodka_vitaly"])
 		// Buffs
 		fmt.Printf("  6) Puff 9K (x%d) — +15%%%% dégâts (loot) + buff, -5 PV\n", playerInventory["puff_9k"])
 		fmt.Printf("  7) Élixir de Force (x%d) — buff dégâts\n", playerInventory["elixir_force"])
@@ -243,6 +244,15 @@ func objectMenu(player, enemy *Personnage) bool {
 			input = "r"
 		}
 		switch input {
+		case "v": // Vodka de Vitaly — régénère toute la vie
+			if playerInventory["vodka_vitaly"] > 0 {
+				heal := player.PVMax - player.PV
+				player.PV = player.PVMax
+				playerInventory["vodka_vitaly"]--
+				fmt.Printf("🍶 Vodka de Vitaly: +%d PV (PV: %d/%d) — Toute votre vie est régénérée !\n", heal, player.PV, player.PVMax)
+			} else {
+				fmt.Println("❌ Vous n'avez pas de Vodka de Vitaly !")
+			}
 		case "1": // Potion simple +70 PV (compat historique)
 			if playerInventory["potions"] > 0 {
 				heal := 70
