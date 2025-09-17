@@ -69,6 +69,8 @@ func applyEnemyStates(mapData [][]int, currentMap string) {
 				}
 			}
 		}
+		// Reset des assignations
+		enemyAssignments[currentMap] = make(map[string]string)
 		// Nouvelle génération aléatoire
 		generateRandomMobs(mapData)
 	} else if currentMap == "salle2" {
@@ -80,6 +82,7 @@ func applyEnemyStates(mapData [][]int, currentMap string) {
 				}
 			}
 		}
+		enemyAssignments[currentMap] = make(map[string]string)
 		generateRandomMobsSalle2(mapData)
 	} else if currentMap == "salle9" {
 		// Salle9: à chaque entrée, on nettoie ennemis et on régénère 10-15 ennemis
@@ -90,6 +93,7 @@ func applyEnemyStates(mapData [][]int, currentMap string) {
 				}
 			}
 		}
+		enemyAssignments[currentMap] = make(map[string]string)
 		generateRandomMobsSalle9(mapData)
 	} else if currentMap == "salle10" {
 		// Générer positions si première visite
@@ -103,6 +107,25 @@ func applyEnemyStates(mapData [][]int, currentMap string) {
 				mapData[mob.y][mob.x] = 2
 				if isSuper {
 					mapData[mob.y][mob.x] = 12
+				}
+				// Assigner un type d'ennemi selon la salle (tier)
+				tier := tierForMap(currentMap)
+				var pool []EnemyTemplate
+				switch tier {
+				case TierTutorial:
+					pool = tutorialPool
+				case TierEarly:
+					pool = earlyPool
+				case TierMid:
+					pool = midPool
+				case TierLate:
+					pool = latePool
+				default:
+					pool = earlyPool
+				}
+				if len(pool) > 0 {
+					chosen := pool[rand.Intn(len(pool))]
+					enemyAssignments[currentMap][key] = chosen.Name
 				}
 			}
 		} else {
@@ -120,6 +143,25 @@ func applyEnemyStates(mapData [][]int, currentMap string) {
 							mapData[mob.y][mob.x] = 12
 						}
 						enemiesDefeated[currentMap][key] = false
+						// Ré-assigner un type
+						tier := tierForMap(currentMap)
+						var pool []EnemyTemplate
+						switch tier {
+						case TierTutorial:
+							pool = tutorialPool
+						case TierEarly:
+							pool = earlyPool
+						case TierMid:
+							pool = midPool
+						case TierLate:
+							pool = latePool
+						default:
+							pool = earlyPool
+						}
+						if len(pool) > 0 {
+							chosen := pool[rand.Intn(len(pool))]
+							enemyAssignments[currentMap][key] = chosen.Name
+						}
 					} else {
 						mapData[mob.y][mob.x] = 0 // reste vide
 					}
@@ -166,9 +208,9 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 	case 2, 12: // ennemi (2=normal, 12=super)
 		fmt.Println("Vous rencontrez une créature maudite !")
 		isSuper := (cell == 12)
-		result := combat(currentMap, isSuper)
-
 		enemyKey := fmt.Sprintf("%d_%d", newX, newY)
+		// Si un type est assigné à cette position, on le conserve pour l'instanciation du combat
+		result := combatWithAssignedType(currentMap, isSuper, enemyAssignments[currentMap][enemyKey])
 
 		// Si le joueur est mort (PV <= 0), régénérer, appliquer la perte de pièces et demander une transition vers salle1
 		if currentPlayer.PV <= 0 {
@@ -210,6 +252,8 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 				mapData[newY][newX] = 1
 				fmt.Println("Vous pouvez maintenant passer par cette case.")
 			}
+			// Nettoie l'assignation une fois l'ennemi disparu
+			delete(enemyAssignments[currentMap], enemyKey)
 		} else if result == true {
 			// Cas spécial: autoriser la transformation en PNJ UNIQUEMENT
 			// pour l'unique mob de salle1 (coordonnées 8,3 dans salle1).
@@ -232,6 +276,7 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 				mapData[newY][newX] = 1
 				fmt.Println("Vous pouvez maintenant passer par cette case.")
 			}
+			delete(enemyAssignments[currentMap], enemyKey)
 		} else {
 			fmt.Println("Vous restez à votre position.")
 		}
@@ -467,7 +512,7 @@ func RunGameLoop(currentMap string) {
 	}
 
 	for {
-		printMap(mapData) // Le HUD est maintenant intégré dans printMap
+		printMap(mapData, currentMap) // Le HUD est maintenant intégré dans printMap
 		fmt.Printf("📍 Salle actuelle: %s\n", currentMap)
 
 		px, py := findPlayer(mapData)

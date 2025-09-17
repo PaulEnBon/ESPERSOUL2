@@ -99,3 +99,19 @@ var transitions = map[string]map[int]struct {
 var superEnemyFlags = map[string]map[string]bool{
 	"salle10": make(map[string]bool),
 }
+
+// Assignation du type d'ennemi par position (clé: "x_y") pour chaque salle
+// Utilisé pour afficher un emoji distinct sur la carte et garantir la cohérence lors des combats
+var enemyAssignments = map[string]map[string]string{
+	"salle1":  make(map[string]string),
+	"salle2":  make(map[string]string),
+	"salle3":  make(map[string]string),
+	"salle4":  make(map[string]string),
+	"salle5":  make(map[string]string),
+	"salle6":  make(map[string]string),
+	"salle7":  make(map[string]string),
+	"salle8":  make(map[string]string),
+	"salle9":  make(map[string]string),
+	"salle10": make(map[string]string),
+	"salle11": make(map[string]string),
+}

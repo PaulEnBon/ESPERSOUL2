@@ -42,7 +42,7 @@ func copyMap(src [][]int) [][]int {
 // Convertit une cellule en symbole
 var useASCII = false // Passez à true pour un mode ASCII aligné sans emojis
 
-func cellToSymbol(val int) string {
+func cellToSymbol(val, x, y int, currentMap string) string {
 	if useASCII {
 		switch val {
 		case 9:
@@ -90,10 +90,19 @@ func cellToSymbol(val int) string {
 		return "↑"
 	case 1:
 		return "🎮" // Joueur plus visible
-	case 2:
-		return "👹" // Ennemi
-	case 12:
-		return "💀" // Super Ennemi (2x stats)
+	case 2, 12:
+		// Affiche un emoji spécifique selon le type assigné
+		key := fmt.Sprintf("%d_%d", x, y)
+		if currentMap != "" {
+			if name, ok := enemyAssignments[currentMap][key]; ok && name != "" {
+				return emojiForEnemyName(name)
+			}
+		}
+		// Fallbacks si pas d'assignation
+		if val == 12 {
+			return "💀"
+		}
+		return "👹"
 	case 3:
 		return "👨" // PNJ
 	case 4:
@@ -112,7 +121,7 @@ func cellToSymbol(val int) string {
 }
 
 // Affiche la map avec HUD optimisé
-func printMap(mapData [][]int) {
+func printMap(mapData [][]int, currentMap string) {
 	fmt.Print("\033[H\033[2J") // Nettoie l'écran
 
 	// En-tête du jeu
@@ -164,8 +173,8 @@ func printMap(mapData [][]int) {
 	for i := 0; i < maxLines; i++ {
 		if i < mapHeight {
 			var b strings.Builder
-			for _, val := range mapData[i] {
-				sym := cellToSymbol(val)
+			for j, val := range mapData[i] {
+				sym := cellToSymbol(val, j, i, currentMap)
 				w := runewidth.StringWidth(sym)
 				pad := cellWidth - w
 				if pad < 0 {
@@ -324,6 +333,16 @@ func generateRandomMobs(mapData [][]int) {
 			if !isOccupied {
 				randomMobsSalle3 = append(randomMobsSalle3, struct{ x, y int }{x, y})
 				mapData[y][x] = 2
+				// Assigner un type d'ennemi aléatoire selon le tier de la salle
+				pool := tutorialPool // fallback
+				if tierForMap("salle3") == TierEarly {
+					pool = earlyPool
+				}
+				if len(pool) > 0 {
+					chosen := pool[rand.Intn(len(pool))]
+					key := fmt.Sprintf("%d_%d", x, y)
+					enemyAssignments["salle3"][key] = chosen.Name
+				}
 			}
 		}
 		attempts++
@@ -366,6 +385,13 @@ func generateRandomMobsSalle2(mapData [][]int) {
 			if !isOccupied {
 				randomMobsSalle2 = append(randomMobsSalle2, struct{ x, y int }{x, y})
 				mapData[y][x] = 2
+				// Assigner un type d'ennemi aléatoire selon le tier de la salle
+				pool := earlyPool
+				if len(pool) > 0 {
+					chosen := pool[rand.Intn(len(pool))]
+					key := fmt.Sprintf("%d_%d", x, y)
+					enemyAssignments["salle2"][key] = chosen.Name
+				}
 			}
 		}
 		attempts++
@@ -400,6 +426,13 @@ func generateRandomMobsSalle9(mapData [][]int) {
 		// Placer uniquement sur sol vide (0), éviter portes/marqueurs
 		if mapData[y][x] == 0 {
 			mapData[y][x] = 2
+			// Assigner un type d'ennemi aléatoire selon le tier Late
+			pool := latePool
+			if len(pool) > 0 {
+				chosen := pool[rand.Intn(len(pool))]
+				key := fmt.Sprintf("%d_%d", x, y)
+				enemyAssignments["salle9"][key] = chosen.Name
+			}
 			placed++
 		}
 		attempts++
