@@ -45,6 +45,51 @@ func computeCoinLoot() (coins int, jackpot bool, breakdown string) {
 	return total, false, fmt.Sprintf("base=%d +legend=%d +puff=%d", base, legendaryBonus, puffBonus)
 }
 
+// Petits helpers d'emoji pour l'affichage des ennemis
+func emojiForEnemyName(name string) string {
+	switch name {
+	case "Rat":
+		return "🐀"
+	case "Gelée":
+		return "🟢"
+	case "Brigand":
+		return "🗡️"
+	case "Archer":
+		return "🏹"
+	case "Apprenti Pyro":
+		return "🔥"
+	case "Chevalier":
+		return "🛡️"
+	case "Berserker":
+		return "⚔️"
+	case "Mage Sombre":
+		return "🪄"
+	case "Seigneur Démon":
+		return "👿"
+	case "Archimage":
+		return "📜"
+	case "Champion déchu":
+		return "🥷"
+	default:
+		return "👾"
+	}
+}
+
+func emojiForTier(t EnemyTier) string {
+	switch t {
+	case TierTutorial:
+		return "🟩"
+	case TierEarly:
+		return "🟦"
+	case TierMid:
+		return "🟧"
+	case TierLate:
+		return "🟥"
+	default:
+		return "⬜"
+	}
+}
+
 // ——————————————————————————————————————————————————————————
 // Système de combat intégrant classes/armes/dégâts/effets/artefacts
 // ——————————————————————————————————————————————————————————
@@ -165,6 +210,257 @@ func chooseCompetence(p *Personnage) (Competence, bool) {
 	return comps[0], true
 }
 
+// Sous-menu Objets (potion, Puff 9K, etc.) — n'utilise pas le tour
+// Retourne true si le joueur meurt pendant l'utilisation (ex: Puff 9K)
+func objectMenu(player, enemy *Personnage) bool {
+	for {
+		fmt.Println("\n🎒 Objets:")
+		// Soins
+		fmt.Printf("  1) Potion (x%d) — +70 PV\n", playerInventory["potions"])
+		fmt.Printf("  2) Potion Mineure (x%d) — soin léger\n", playerInventory["potion_mineure"])
+		fmt.Printf("  3) Potion Majeure (x%d) — soin puissant\n", playerInventory["potion_majeure"])
+		fmt.Printf("  4) Potion Suprême (x%d) — soin massif\n", playerInventory["potion_supreme"])
+		fmt.Printf("  5) Antidote (x%d) — retire poison\n", playerInventory["antidote"])
+		// Buffs
+		fmt.Printf("  6) Puff 9K (x%d) — +15%%%% dégâts (loot) + buff, -5 PV\n", playerInventory["puff_9k"])
+		fmt.Printf("  7) Élixir de Force (x%d) — buff dégâts\n", playerInventory["elixir_force"])
+		fmt.Printf("  8) Élixir de Vitesse (x%d) — buff dégâts magiques\n", playerInventory["elixir_vitesse"])
+		fmt.Printf("  9) Élixir de Précision (x%d) — buff dégâts/crit\n", playerInventory["elixir_critique"])
+		// Offensifs/Utilitaires
+		fmt.Printf("  A) Potion de Dégâts (x%d) — dégâts magiques\n", playerInventory["potion_degats"])
+		fmt.Printf("  B) Bombe Incendiaire (x%d) — dégâts + brûlure\n", playerInventory["bombe_incendiaire"])
+		fmt.Printf("  C) Bombe Givrante (x%d) — dégâts + étourdissement\n", playerInventory["bombe_givrante"])
+		fmt.Printf("  D) Grenade Fumigène (x%d) — nébulation (aveugle)\n", playerInventory["grenade_fumigene"])
+		fmt.Printf("  E) Parchemin de Dispersion (x%d) — affaiblissement\n", playerInventory["parchemin_dispersion"])
+		fmt.Println("  [R]etour")
+		fmt.Print("Votre choix: ")
+		if globalKeyEvents == nil {
+			return false
+		}
+		e := <-globalKeyEvents
+		input := strings.ToLower(string(e.Rune))
+		if e.Key == keyboard.KeyEsc {
+			input = "r"
+		}
+		switch input {
+		case "1": // Potion simple +70 PV (compat historique)
+			if playerInventory["potions"] > 0 {
+				heal := 70
+				player.PV += heal
+				if player.PV > player.PVMax {
+					player.PV = player.PVMax
+				}
+				playerInventory["potions"]--
+				fmt.Printf("🧪 Potion: +%d PV (PV: %d/%d)\n", heal, player.PV, player.PVMax)
+			} else {
+				fmt.Println("❌ Vous n'avez pas de potion !")
+			}
+		case "2": // Potion Mineure
+			if playerInventory["potion_mineure"] > 0 {
+				comp := potionMineure.Competences[0]
+				heal := -comp.Degats
+				if heal < 0 {
+					heal = 30
+				}
+				player.PV += heal
+				if player.PV > player.PVMax {
+					player.PV = player.PVMax
+				}
+				playerInventory["potion_mineure"]--
+				fmt.Printf("🧪 Potion mineure: +%d PV (PV: %d/%d)\n", heal, player.PV, player.PVMax)
+			} else {
+				fmt.Println("❌ Vous n'avez pas de potion mineure !")
+			}
+		case "3": // Potion Majeure
+			if playerInventory["potion_majeure"] > 0 {
+				comp := potionMajeure.Competences[0]
+				heal := -comp.Degats
+				if heal < 0 {
+					heal = 80
+				}
+				player.PV += heal
+				if player.PV > player.PVMax {
+					player.PV = player.PVMax
+				}
+				playerInventory["potion_majeure"]--
+				fmt.Printf("🧪 Potion majeure: +%d PV (PV: %d/%d)\n", heal, player.PV, player.PVMax)
+			} else {
+				fmt.Println("❌ Vous n'avez pas de potion majeure !")
+			}
+		case "4": // Potion Suprême
+			if playerInventory["potion_supreme"] > 0 {
+				comp := potionSupreme.Competences[0]
+				heal := -comp.Degats
+				if heal < 0 {
+					heal = 200
+				}
+				player.PV += heal
+				if player.PV > player.PVMax {
+					player.PV = player.PVMax
+				}
+				playerInventory["potion_supreme"]--
+				fmt.Printf("🧪 Potion suprême: +%d PV (PV: %d/%d)\n", heal, player.PV, player.PVMax)
+			} else {
+				fmt.Println("❌ Vous n'avez pas de potion suprême !")
+			}
+		case "5": // Antidote
+			if playerInventory["antidote"] > 0 {
+				if eff := CreerEffet("Guérison Poison", 1); eff != nil {
+					AppliquerEffet(player, *eff)
+				}
+				playerInventory["antidote"]--
+				fmt.Println("🧯 Antidote utilisé: le poison est dissipé.")
+			} else {
+				fmt.Println("❌ Vous n'avez pas d'antidote !")
+			}
+		case "6": // Puff 9K
+			if playerInventory["puff_9k"] > 0 {
+				playerInventory["puff_9k"]--
+				playerStats.attackBoost += 15 // bonus de loot cumulatif
+				if eff := CreerEffet("Augmentation de Dégâts", 2); eff != nil {
+					AppliquerEffet(player, *eff)
+				}
+				player.PV -= 5
+				if player.PV < 0 {
+					player.PV = 0
+				}
+				fmt.Println("💊 Vous utilisez un Puff 9K !")
+				fmt.Println("⚡ +15% de dégâts (loot) et buff de dégâts temporaire !")
+				fmt.Printf("💔 Vous perdez 5 PV. PV actuels: %d/%d\n", player.PV, player.PVMax)
+				if player.PV <= 0 {
+					fmt.Println("💀 Le Puff 9K vous a tué ! Attention à la surdose...")
+					return true
+				}
+			} else {
+				fmt.Println("❌ Vous n'avez pas de Puff 9K !")
+			}
+		case "7": // Élixir de Force
+			if playerInventory["elixir_force"] > 0 {
+				if eff := CreerEffet("Augmentation de Dégâts", 4); eff != nil {
+					AppliquerEffet(player, *eff)
+				}
+				playerInventory["elixir_force"]--
+				fmt.Println("🧃 Élixir de Force: vos dégâts sont augmentés !")
+			} else {
+				fmt.Println("❌ Vous n'avez pas d'élixir de force !")
+			}
+		case "8": // Élixir de Vitesse
+			if playerInventory["elixir_vitesse"] > 0 {
+				if eff := CreerEffet("Augmentation de Dégâts Magiques", 3); eff != nil {
+					AppliquerEffet(player, *eff)
+				}
+				playerInventory["elixir_vitesse"]--
+				fmt.Println("🧃 Élixir de Vitesse: vos dégâts magiques sont augmentés !")
+			} else {
+				fmt.Println("❌ Vous n'avez pas d'élixir de vitesse !")
+			}
+		case "9": // Élixir de Précision
+			if playerInventory["elixir_critique"] > 0 {
+				if eff := CreerEffet("Augmentation de Dégâts", 5); eff != nil {
+					AppliquerEffet(player, *eff)
+				}
+				playerInventory["elixir_critique"]--
+				fmt.Println("🧃 Élixir de Précision: vos coups deviennent plus meurtriers !")
+			} else {
+				fmt.Println("❌ Vous n'avez pas d'élixir de précision !")
+			}
+		case "a": // Potion de Dégâts (attaque magique directe)
+			if playerInventory["potion_degats"] > 0 {
+				comp := potionDegats.Competences[0]
+				dmg, touche, crit := resolveAttack(player, enemy, comp.Degats, comp.Type)
+				if !touche {
+					fmt.Println("🙃 Votre lancer de potion rate !")
+				} else {
+					enemy.PV -= dmg
+					if enemy.PV < 0 {
+						enemy.PV = 0
+					}
+					if crit {
+						fmt.Printf("💥 Potion de dégâts critique ! %d dégâts.\n", dmg)
+					} else {
+						fmt.Printf("💥 Potion de dégâts inflige %d dégâts.\n", dmg)
+					}
+				}
+				playerInventory["potion_degats"]--
+			} else {
+				fmt.Println("❌ Vous n'avez pas de potion de dégâts !")
+			}
+		case "b": // Bombe Incendiaire
+			if playerInventory["bombe_incendiaire"] > 0 {
+				comp := bombeIncendiaire.Competences[0]
+				dmg, touche, crit := resolveAttack(player, enemy, comp.Degats, comp.Type)
+				if !touche {
+					fmt.Println("🧨 La bombe incendiaire n'atteint pas sa cible !")
+				} else {
+					enemy.PV -= dmg
+					if enemy.PV < 0 {
+						enemy.PV = 0
+					}
+					if crit {
+						fmt.Printf("🔥 Explosion critique ! %d dégâts.\n", dmg)
+					} else {
+						fmt.Printf("🔥 Explosion de feu: %d dégâts.\n", dmg)
+					}
+					if eff := CreerEffet("Brûlure", comp.Puissance); eff != nil {
+						AppliquerEffet(enemy, *eff)
+					}
+				}
+				playerInventory["bombe_incendiaire"]--
+			} else {
+				fmt.Println("❌ Vous n'avez pas de bombe incendiaire !")
+			}
+		case "c": // Bombe Givrante
+			if playerInventory["bombe_givrante"] > 0 {
+				comp := bombeGivrante.Competences[0]
+				dmg, touche, crit := resolveAttack(player, enemy, comp.Degats, comp.Type)
+				if !touche {
+					fmt.Println("❄️ La bombe givrante rate sa cible !")
+				} else {
+					enemy.PV -= dmg
+					if enemy.PV < 0 {
+						enemy.PV = 0
+					}
+					if crit {
+						fmt.Printf("❄️ Explosion glaciale critique ! %d dégâts.\n", dmg)
+					} else {
+						fmt.Printf("❄️ Explosion de glace: %d dégâts.\n", dmg)
+					}
+					if eff := CreerEffet("Étourdissement", comp.Puissance); eff != nil {
+						AppliquerEffet(enemy, *eff)
+					}
+				}
+				playerInventory["bombe_givrante"]--
+			} else {
+				fmt.Println("❌ Vous n'avez pas de bombe givrante !")
+			}
+		case "d": // Grenade Fumigène
+			if playerInventory["grenade_fumigene"] > 0 {
+				if eff := CreerEffet("Nébulation", 3); eff != nil {
+					AppliquerEffet(enemy, *eff)
+				}
+				playerInventory["grenade_fumigene"]--
+				fmt.Println("🌫️ Grenade fumigène: l'ennemi voit mal !")
+			} else {
+				fmt.Println("❌ Vous n'avez pas de grenade fumigène !")
+			}
+		case "e": // Parchemin de Dispersion
+			if playerInventory["parchemin_dispersion"] > 0 {
+				if eff := CreerEffet("Affaiblissement", 2); eff != nil {
+					AppliquerEffet(enemy, *eff)
+				}
+				playerInventory["parchemin_dispersion"]--
+				fmt.Println("📜 Parchemin de Dispersion: l'ennemi est affaibli !")
+			} else {
+				fmt.Println("❌ Vous n'avez pas de parchemin de dispersion !")
+			}
+		case "r":
+			return false
+		default:
+			fmt.Println("Choix invalide.")
+		}
+	}
+}
+
 // Système de combat amélioré avec les modules existants
 func combat(currentMap string, isSuper bool) interface{} {
 	rand.Seed(time.Now().UnixNano())
@@ -179,9 +475,9 @@ func combat(currentMap string, isSuper bool) interface{} {
 
 	fmt.Println("\n🗡️  COMBAT ENGAGÉ ! 🗡️")
 	if isSuper {
-		fmt.Println("Vous affrontez un ENNEMI SURPUISSANT !")
+		fmt.Printf("Vous affrontez un ENNEMI SURPUISSANT: %s\n", enemy.Nom)
 	} else {
-		fmt.Println("Vous affrontez une créature maudite !")
+		fmt.Printf("Vous affrontez: %s\n", enemy.Nom)
 	}
 
 	for player.PV > 0 && enemy.PV > 0 {
@@ -190,12 +486,8 @@ func combat(currentMap string, isSuper bool) interface{} {
 			fmt.Println("🌟 Excalibur équipée (+50% dégâts de loot)")
 		}
 
-		// Affiche compétence de base
-		if comp, ok := pickCompetence(&player); ok {
-			fmt.Printf("Compétence de base: %s (%s, %d dégâts)\n", comp.Nom, comp.Type, comp.Degats)
-		}
-
-		fmt.Println("Actions: [A]ttaquer, [D]éfendre, [P]otion, [U]ser Puff 9K, [F]uir")
+		// Affichage des actions (Objets via sous-menu, Défense intégrée)
+		fmt.Println("Actions: [A]ttaquer, [D]éfendre, [O]bjet, [F]uir")
 		fmt.Print("Choisissez une action: ")
 		// Utilise le même canal que la boucle de jeu
 		if globalKeyEvents == nil {
@@ -269,44 +561,46 @@ func combat(currentMap string, isSuper bool) interface{} {
 			shield := Effet{Nom: "Bouclier", ToursRestants: 1, ModifArmure: 0.30, ChanceAppliquer: 1.0}
 			AppliquerEffet(&player, shield)
 			// Pas d'attaque joueur ce tour, on enchaîne vers l'ennemi
-
-		case "p":
-			if playerInventory["potions"] > 0 {
-				heal := 70
-				player.PV += heal
-				if player.PV > player.PVMax {
-					player.PV = player.PVMax
-				}
-				playerInventory["potions"]--
-				fmt.Printf("🧪 Vous vous soignez de %d PV ! (PV actuels: %d/%d)\n", heal, player.PV, player.PVMax)
-			} else {
-				fmt.Println("❌ Vous n'avez pas de potions !")
-				// saute le tour ennemi si pas d'action ? non, on continue le tour normal
+		case "o":
+			// Sous-menu objets: n'utilise pas le tour
+			if died := objectMenu(&player, &enemy); died {
+				// Persiste la mort immédiate
+				currentPlayer.PV = player.PV
+				playerStats.attackBoost = 0
+				return false
 			}
-
-		case "u":
-			if playerInventory["puff_9k"] > 0 {
-				playerInventory["puff_9k"]--
-				playerStats.attackBoost += 15 // conserve l'ancien bonus pour le loot
-				// Ajoute un effet d'Augmentation de Dégâts sur le joueur
-				if eff := CreerEffet("Augmentation de Dégâts", 2); eff != nil {
-					AppliquerEffet(&player, *eff)
+			// Si l'objet a tué l'ennemi, accorder la victoire immédiatement
+			if enemy.PV <= 0 {
+				fmt.Println("\n🎉 VICTOIRE ! Vous avez vaincu la créature !")
+				playerStats.enemiesKilled++
+				coins, jackpot, details := computeCoinLoot()
+				addToInventory("pièces", coins)
+				if jackpot {
+					fmt.Printf("💎 JACKPOT ! Vous obtenez %d pièces (%s) !\n", coins, details)
+				} else {
+					fmt.Printf("✨ Vous avez reçu %d pièces (%s).\n", coins, details)
 				}
-				player.PV -= 5
-				if player.PV < 0 {
-					player.PV = 0
+				tier := tierForMap(currentMap)
+				rocks := 0
+				switch tier {
+				case TierTutorial, TierEarly:
+					rocks = 1
+				case TierMid:
+					rocks = 2
+				case TierLate:
+					rocks = 3
 				}
-				fmt.Println("💊 Vous utilisez un Puff 9K !")
-				fmt.Println("⚡ +15% de dégâts (loot) et buff de dégâts temporaire !")
-				fmt.Printf("💔 Vous perdez 5 PV. PV actuels: %d/%d\n", player.PV, player.PVMax)
-
-				if player.PV <= 0 {
-					fmt.Println("💀 Le Puff 9K vous a tué ! Attention à la surdose...")
-					return false
+				if rocks > 0 {
+					currentPlayer.Roches += rocks
+					fmt.Printf("🪨 Vous obtenez %d roche(s) d'évolution. Total roches: %d\n", rocks, currentPlayer.Roches)
 				}
-			} else {
-				fmt.Println("❌ Vous n'avez pas de Puff 9K !")
+				currentPlayer.PV = player.PV
+				playerStats.attackBoost = 0
+				fmt.Println("� La créature disparaît complètement dans un nuage de fumée...")
+				return "disappear"
 			}
+			// Sinon, ne consomme pas le tour ennemi
+			continue
 
 		case "f":
 			fmt.Println("💨 Vous fuyez le combat !")
@@ -408,6 +702,257 @@ func combat(currentMap string, isSuper bool) interface{} {
 			fmt.Println("\n💀 DÉFAITE ! Vous avez été vaincu...")
 			fmt.Println("🔄 Vous retournez au début de la salle.")
 			// Persiste les PV du joueur (reste à 0)
+			currentPlayer.PV = player.PV
+			playerStats.attackBoost = 0
+			return false
+		}
+	}
+
+	return false
+}
+
+// Variante qui force un type d'ennemi si name est non vide
+func combatWithAssignedType(currentMap string, isSuper bool, name string) interface{} {
+	rand.Seed(time.Now().UnixNano())
+
+	// Joueur
+	player := buildPlayerCharacter()
+
+	// Choix de l'ennemi
+	var enemy Personnage
+	if name == "" {
+		enemy = CreateRandomEnemyForMap(currentMap, isSuper)
+	} else {
+		// Cherche le template par nom à partir du tier de la salle
+		tier := tierForMap(currentMap)
+		var pool []EnemyTemplate
+		switch tier {
+		case TierTutorial:
+			pool = tutorialPool
+		case TierEarly:
+			pool = earlyPool
+		case TierMid:
+			pool = midPool
+		case TierLate:
+			pool = latePool
+		default:
+			pool = earlyPool
+		}
+		found := false
+		for _, t := range pool {
+			if t.Name == name {
+				enemy = NewEnemyFromTemplate(t, isSuper)
+				// Préfixer le nom comme dans CreateRandomEnemyForMap
+				typeEmoji := emojiForEnemyName(t.Name)
+				diffEmoji := emojiForTier(tier)
+				prefix := typeEmoji + " " + diffEmoji
+				if isSuper {
+					prefix = "💀 " + prefix
+				}
+				enemy.Nom = prefix + " " + enemy.Nom
+				found = true
+				break
+			}
+		}
+		if !found {
+			enemy = CreateRandomEnemyForMap(currentMap, isSuper)
+		}
+	}
+
+	enemyAttackBase := enemy.ArmeEquipee.DegatsPhysiques
+	if enemyAttackBase <= 0 {
+		enemyAttackBase = 12
+	}
+
+	fmt.Println("\n🗡️  COMBAT ENGAGÉ ! 🗡️")
+	if isSuper {
+		fmt.Printf("Vous affrontez un ENNEMI SURPUISSANT: %s\n", enemy.Nom)
+	} else {
+		fmt.Printf("Vous affrontez: %s\n", enemy.Nom)
+	}
+
+	for player.PV > 0 && enemy.PV > 0 {
+		fmt.Printf("\n💚 Vos PV: %d/%d | 💀 PV Ennemi: %d/%d\n", player.PV, player.PVMax, enemy.PV, enemy.PVMax)
+		if playerStats.hasLegendaryWeapon {
+			fmt.Println("🌟 Excalibur équipée (+50% dégâts de loot)")
+		}
+
+		fmt.Println("Actions: [A]ttaquer, [D]éfendre, [O]bjet, [F]uir")
+		fmt.Print("Choisissez une action: ")
+		if globalKeyEvents == nil {
+			fmt.Println("(clavier non initialisé)")
+			return false
+		}
+		e := <-globalKeyEvents
+		input := strings.ToLower(string(e.Rune))
+		if e.Key == keyboard.KeyEsc {
+			input = "f"
+		}
+
+		AppliquerProtectionsArtefactsDebutTour(&player)
+
+		switch input {
+		case "a":
+			comp, ok := chooseCompetence(&player)
+			if !ok {
+				comp = Competence{Nom: "Attaque", Degats: 15, Type: "physique"}
+			}
+			if comp.Degats <= 0 && comp.TypeEffet != "" && isSelfBuff(comp.TypeEffet) {
+				if eff := CreerEffet(comp.TypeEffet, comp.Puissance); eff != nil {
+					AppliquerEffet(&player, *eff)
+				}
+			} else if comp.Degats <= 0 && comp.TypeEffet != "" {
+				if eff := CreerEffet(comp.TypeEffet, comp.Puissance); eff != nil {
+					AppliquerEffet(&enemy, *eff)
+				}
+			} else {
+				degatsBase := comp.Degats
+				typeAtk := comp.Type
+				if degatsBase <= 0 {
+					degatsBase = 15
+				}
+				if typeAtk == "" {
+					typeAtk = "physique"
+				}
+				dmg, touche, crit := resolveAttack(&player, &enemy, degatsBase, typeAtk)
+				if touche {
+					enemy.PV -= dmg
+					if enemy.PV < 0 {
+						enemy.PV = 0
+					}
+					if crit {
+						fmt.Printf("⚔️  Coup critique ! Vous infligez %d dégâts.\n", dmg)
+					} else {
+						fmt.Printf("⚔️  Vous infligez %d dégâts.\n", dmg)
+					}
+					if comp.TypeEffet != "" {
+						maybeApplyEffect(&enemy, comp)
+					}
+				} else {
+					fmt.Println("🙃 Votre attaque rate sa cible !")
+				}
+			}
+		case "d":
+			fmt.Println("🛡️  Vous vous défendez !")
+			shield := Effet{Nom: "Bouclier", ToursRestants: 1, ModifArmure: 0.30, ChanceAppliquer: 1.0}
+			AppliquerEffet(&player, shield)
+		case "o":
+			if died := objectMenu(&player, &enemy); died {
+				currentPlayer.PV = player.PV
+				playerStats.attackBoost = 0
+				return false
+			}
+			if enemy.PV <= 0 {
+				fmt.Println("\n🎉 VICTOIRE ! Vous avez vaincu la créature !")
+				playerStats.enemiesKilled++
+				coins, jackpot, details := computeCoinLoot()
+				addToInventory("pièces", coins)
+				if jackpot {
+					fmt.Printf("💎 JACKPOT ! Vous obtenez %d pièces (%s) !\n", coins, details)
+				} else {
+					fmt.Printf("✨ Vous avez reçu %d pièces (%s).\n", coins, details)
+				}
+				tier := tierForMap(currentMap)
+				rocks := 0
+				switch tier {
+				case TierTutorial, TierEarly:
+					rocks = 1
+				case TierMid:
+					rocks = 2
+				case TierLate:
+					rocks = 3
+				}
+				if rocks > 0 {
+					currentPlayer.Roches += rocks
+					fmt.Printf("🪨 Vous obtenez %d roche(s) d'évolution. Total roches: %d\n", rocks, currentPlayer.Roches)
+				}
+				currentPlayer.PV = player.PV
+				playerStats.attackBoost = 0
+				fmt.Println("💨 La créature disparaît complètement dans un nuage de fumée...")
+				return "disappear"
+			}
+			continue
+		case "f":
+			fmt.Println("💨 Vous fuyez le combat !")
+			currentPlayer.PV = player.PV
+			playerStats.attackBoost = 0
+			return false
+		default:
+			fmt.Println("Action invalide !")
+		}
+
+		TraiterEffetsFinTour(&player)
+		TraiterEffetsFinTour(&enemy)
+
+		if enemy.PV <= 0 {
+			fmt.Println("\n🎉 VICTOIRE ! Vous avez vaincu la créature !")
+			playerStats.enemiesKilled++
+			coins, jackpot, details := computeCoinLoot()
+			addToInventory("pièces", coins)
+			if jackpot {
+				fmt.Printf("💎 JACKPOT ! Vous obtenez %d pièces (%s) !\n", coins, details)
+			} else {
+				fmt.Printf("✨ Vous avez reçu %d pièces (%s).\n", coins, details)
+			}
+			tier := tierForMap(currentMap)
+			rocks := 0
+			switch tier {
+			case TierTutorial, TierEarly:
+				rocks = 1
+			case TierMid:
+				rocks = 2
+			case TierLate:
+				rocks = 3
+			}
+			if rocks > 0 {
+				currentPlayer.Roches += rocks
+				fmt.Printf("🪨 Vous obtenez %d roche(s) d'évolution. Total roches: %d\n", rocks, currentPlayer.Roches)
+			}
+			currentPlayer.PV = player.PV
+			playerStats.attackBoost = 0
+			fmt.Println("💨 La créature disparaît complètement dans un nuage de fumée...")
+			return "disappear"
+		}
+
+		if EstEtourdi(&enemy) {
+			fmt.Println("😵‍💫 L'ennemi est étourdi et rate son tour !")
+		} else {
+			ecomp, ok := pickCompetence(&enemy)
+			edeg := enemyAttackBase
+			etype := "physique"
+			if ok {
+				if ecomp.Degats > 0 {
+					edeg = ecomp.Degats
+				}
+				if ecomp.Type != "" {
+					etype = ecomp.Type
+				}
+			}
+			edmg, touche, crit := resolveAttack(&enemy, &player, edeg, etype)
+			if !touche {
+				fmt.Println("🌀 L'ennemi rate son attaque !")
+			} else {
+				player.PV -= edmg
+				if player.PV < 0 {
+					player.PV = 0
+				}
+				if crit {
+					fmt.Printf("💥 Coup critique ennemi ! Vous subissez %d dégâts.\n", edmg)
+				} else {
+					fmt.Printf("💥 L'ennemi vous inflige %d dégâts.\n", edmg)
+				}
+				if ok {
+					maybeApplyEffect(&player, ecomp)
+				}
+			}
+		}
+
+		TraiterEffetsFinTour(&player)
+		TraiterEffetsFinTour(&enemy)
+
+		if player.PV <= 0 {
+			fmt.Println("\n💀 DÉFAITE ! Vous avez été vaincu...")
+			fmt.Println("🔄 Vous retournez au début de la salle.")
 			currentPlayer.PV = player.PV
 			playerStats.attackBoost = 0
 			return false

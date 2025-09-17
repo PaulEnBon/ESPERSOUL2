@@ -29,16 +29,3 @@ func (p *Personnage) AmeliorerArmure() bool {
 	}
 	return false // déjà max
 }
-
-/*
-if joueur.AmeliorerArme() {
-    fmt.Println("Amélioration de l'arme réussie :", joueur.ArmeActuelle().Nom)
-} else {
-    fmt.Println("L'arme est déjà au niveau maximum.")
-}
-
-if joueur.AmeliorerArmure() {
-    fmt.Println("Amélioration de l'armure réussie :", joueur.ArmureActuelle().Nom)
-} else {
-    fmt.Println("L'armure est déjà au niveau maximum.")
-}*/
