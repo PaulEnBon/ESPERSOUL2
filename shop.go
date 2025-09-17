@@ -42,8 +42,21 @@ func showMerchantInterface() {
 		fmt.Println("2. Clé magique - 10 pièces")
 		fmt.Println("3. Vielle clé rouillée - 50 pièces")
 		fmt.Println("4. 💊 Puff 9K - 20 pièces (+15% attaque, -5HP)")
-		fmt.Println("5. Quitter le magasin")
-		fmt.Print("Choisissez un article (1-5): ")
+		// Nouveaux objets
+		fmt.Println("5. Antidote - 6 pièces")
+		fmt.Println("6. Potion mineure - 3 pièces")
+		fmt.Println("7. Potion majeure - 10 pièces")
+		fmt.Println("8. Potion suprême - 25 pièces")
+		fmt.Println("9. Potion de dégâts - 6 pièces")
+		fmt.Println("a. Bombe incendiaire - 12 pièces")
+		fmt.Println("b. Bombe givrante - 14 pièces")
+		fmt.Println("c. Grenade fumigène - 8 pièces")
+		fmt.Println("d. Parchemin de dispersion - 10 pièces")
+		fmt.Println("e. Élixir de force - 12 pièces")
+		fmt.Println("f. Élixir de vitesse - 10 pièces")
+		fmt.Println("g. Élixir de précision - 15 pièces")
+		fmt.Println("q. Quitter le magasin")
+		fmt.Print("Choisissez un article (1-9, a-g, q): ")
 		key := readKey()
 
 		switch key {
@@ -84,7 +97,115 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces! (20 pièces nécessaires)")
 			}
 
-		case '5':
+		case '5': // Antidote - 6 pièces
+			if playerInventory["pièces"] >= 6 {
+				playerInventory["pièces"] -= 6
+				playerInventory["antidote"]++
+				fmt.Println("✨ Vous avez acheté un antidote !")
+			} else {
+				fmt.Println("❌ Vous n'avez pas assez de pièces! (6 pièces nécessaires)")
+			}
+
+		case '6': // Potion mineure - 3 pièces
+			if playerInventory["pièces"] >= 3 {
+				playerInventory["pièces"] -= 3
+				playerInventory["potion_mineure"]++
+				fmt.Println("✨ Vous avez acheté une potion mineure !")
+			} else {
+				fmt.Println("❌ Vous n'avez pas assez de pièces! (3 pièces nécessaires)")
+			}
+
+		case '7': // Potion majeure - 10 pièces
+			if playerInventory["pièces"] >= 10 {
+				playerInventory["pièces"] -= 10
+				playerInventory["potion_majeure"]++
+				fmt.Println("✨ Vous avez acheté une potion majeure !")
+			} else {
+				fmt.Println("❌ Vous n'avez pas assez de pièces! (10 pièces nécessaires)")
+			}
+
+		case '8': // Potion suprême - 25 pièces
+			if playerInventory["pièces"] >= 25 {
+				playerInventory["pièces"] -= 25
+				playerInventory["potion_supreme"]++
+				fmt.Println("✨ Vous avez acheté une potion suprême !")
+			} else {
+				fmt.Println("❌ Vous n'avez pas assez de pièces! (25 pièces nécessaires)")
+			}
+
+		case '9': // Potion de dégâts - 6 pièces
+			if playerInventory["pièces"] >= 6 {
+				playerInventory["pièces"] -= 6
+				playerInventory["potion_degats"]++
+				fmt.Println("✨ Vous avez acheté une potion de dégâts !")
+			} else {
+				fmt.Println("❌ Vous n'avez pas assez de pièces! (6 pièces nécessaires)")
+			}
+
+		case 'a': // Bombe incendiaire - 12 pièces
+			if playerInventory["pièces"] >= 12 {
+				playerInventory["pièces"] -= 12
+				playerInventory["bombe_incendiaire"]++
+				fmt.Println("✨ Vous avez acheté une bombe incendiaire !")
+			} else {
+				fmt.Println("❌ Vous n'avez pas assez de pièces! (12 pièces nécessaires)")
+			}
+
+		case 'b': // Bombe givrante - 14 pièces
+			if playerInventory["pièces"] >= 14 {
+				playerInventory["pièces"] -= 14
+				playerInventory["bombe_givrante"]++
+				fmt.Println("✨ Vous avez acheté une bombe givrante !")
+			} else {
+				fmt.Println("❌ Vous n'avez pas assez de pièces! (14 pièces nécessaires)")
+			}
+
+		case 'c': // Grenade fumigène - 8 pièces
+			if playerInventory["pièces"] >= 8 {
+				playerInventory["pièces"] -= 8
+				playerInventory["grenade_fumigene"]++
+				fmt.Println("✨ Vous avez acheté une grenade fumigène !")
+			} else {
+				fmt.Println("❌ Vous n'avez pas assez de pièces! (8 pièces nécessaires)")
+			}
+
+		case 'd': // Parchemin de dispersion - 10 pièces
+			if playerInventory["pièces"] >= 10 {
+				playerInventory["pièces"] -= 10
+				playerInventory["parchemin_dispersion"]++
+				fmt.Println("✨ Vous avez acheté un parchemin de dispersion !")
+			} else {
+				fmt.Println("❌ Vous n'avez pas assez de pièces! (10 pièces nécessaires)")
+			}
+
+		case 'e': // Élixir de force - 12 pièces
+			if playerInventory["pièces"] >= 12 {
+				playerInventory["pièces"] -= 12
+				playerInventory["elixir_force"]++
+				fmt.Println("✨ Vous avez acheté un élixir de force !")
+			} else {
+				fmt.Println("❌ Vous n'avez pas assez de pièces! (12 pièces nécessaires)")
+			}
+
+		case 'f': // Élixir de vitesse - 10 pièces
+			if playerInventory["pièces"] >= 10 {
+				playerInventory["pièces"] -= 10
+				playerInventory["elixir_vitesse"]++
+				fmt.Println("✨ Vous avez acheté un élixir de vitesse !")
+			} else {
+				fmt.Println("❌ Vous n'avez pas assez de pièces! (10 pièces nécessaires)")
+			}
+
+		case 'g': // Élixir de précision - 15 pièces
+			if playerInventory["pièces"] >= 15 {
+				playerInventory["pièces"] -= 15
+				playerInventory["elixir_critique"]++
+				fmt.Println("✨ Vous avez acheté un élixir de précision !")
+			} else {
+				fmt.Println("❌ Vous n'avez pas assez de pièces! (15 pièces nécessaires)")
+			}
+
+		case 'q':
 			fmt.Println("👋 Merci de votre visite!")
 			return
 
