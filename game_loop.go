@@ -774,6 +774,10 @@ func isValidMovement(x, y int, mapData [][]int) bool {
 	if mapData[y][x] == 9 { // mur
 		return false
 	}
+	// Les arbres sont bloquants comme les murs
+	if mapData[y][x] == 80 { // arbre
+		return false
+	}
 	return true
 }
 
@@ -785,6 +789,8 @@ var mapDataGlobalRef [][]int
 func RunGameLoop(currentMap string) {
 	// reader removed: using keyboard events for movement
 	mapData := copyMap(salles[currentMap])
+	// Appliquer les décorations (arbres, etc.) sur la carte chargée
+	applyDecorations(currentMap, mapData)
 
 	// Auto-équipe la Lunette d'Erwann si la classe est Erwann
 	if currentPlayer.Nom == "Erwann" {
@@ -890,6 +896,8 @@ func RunGameLoop(currentMap string) {
 		if transitionNeeded {
 			currentMap = newMap
 			mapData = copyMap(salles[currentMap])
+			// Ré-appliquer les décorations pour la nouvelle carte
+			applyDecorations(currentMap, mapData)
 			currentMapDisplayName = currentMap
 			assignEnemyEmojis(currentMap, mapData)
 			applyEnemyStates(mapData, currentMap)
