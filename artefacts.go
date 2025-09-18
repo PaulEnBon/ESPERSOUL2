@@ -2,6 +2,7 @@ package main
 
 import "fmt"
 
+// Gestion des artefacts (objets spéciaux conférant des bonus passifs permanents)
 type Artefact struct {
 	Nom         string
 	Description string

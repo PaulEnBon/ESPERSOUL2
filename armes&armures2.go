@@ -14,9 +14,9 @@ type Competence struct {
 	Description string
 	Degats      int
 	CoutMana    int
-	Type        string // "physique" ou "magique"
-	TypeEffet   string // Type d'effet à créer
-	Puissance   int    // Puissance de l'effet (0-5)
+	Type        string
+	TypeEffet   string
+	Puissance   int
 }
 
 type Arme struct {
@@ -67,28 +67,25 @@ func getBaseTemplateByName(name string) (Personnage, bool) {
 	}
 }
 
-// Ré-initialise les stats du perso à celles de sa classe puis ré-applique l'arme/armure équipées
+// Re-initialise les stats du perso à celles de sa classe puis ré-applique l'arme/armure équipées
 func RecomputeFromBaseAndEquip(p *Personnage) {
 	base, ok := getBaseTemplateByName(p.Nom)
 	if !ok {
-		return // Classe inconnue: ne rien faire pour éviter des états incohérents
+		return
 	}
 
 	oldPV := p.PV
 	oldPVMax := p.PVMax
-	// Préserver l'arme actuellement équipée (ex: Dragon Lore) afin de ne pas la perdre lors d'une amélioration
 	savedWeapon := p.ArmeEquipee
-
-	// Remettre les stats de base de la classe
 	p.PVMax = base.PVMax
-	p.PV = base.PV // valeur provisoire; ajustée après équipement
+	p.PV = base.PV
 	p.Armure = base.Armure
 	p.ResistMag = base.ResistMag
 	p.Precision = base.Precision
 	p.TauxCritique = base.TauxCritique
 	p.MultiplicateurCrit = base.MultiplicateurCrit
 
-	// Réinitialiser l'équipement courant (structs)
+	// Réinitialiser l'équipement courant
 	p.ArmeEquipee = Arme{}
 	p.ArmureEquipee = Armure{}
 
