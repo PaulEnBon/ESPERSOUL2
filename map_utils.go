@@ -63,6 +63,8 @@ func cellToSymbol(val int) string {
 			return "*"
 		case 66:
 			return "G" // spawner
+		case 80:
+			return "T" // Arbre (ASCII)
 		case 67, 70, 73, 76:
 			return "m" // mini boss
 		case 68, 72, 75, 78:
@@ -117,6 +119,8 @@ func cellToSymbol(val int) string {
 		return "🔥"
 	case 66:
 		return "⚙️" // spawner
+	case 80:
+		return "🌳" // Arbre
 	case 67:
 		return "🛡️" // mini boss
 	case 68:
