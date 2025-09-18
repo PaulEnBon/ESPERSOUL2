@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
-	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -788,8 +787,6 @@ func objectMenu(player, enemy *Personnage) bool {
 var combatCustomEnemyName string
 
 func combat(currentMap string, isSuper bool) interface{} {
-	rand.Seed(time.Now().UnixNano())
-
 	// Crée les entités combat
 	player := buildPlayerCharacter()
 	enemy := CreateRandomEnemyForMap(currentMap, isSuper)
@@ -1118,8 +1115,6 @@ func combat(currentMap string, isSuper bool) interface{} {
 
 // Variante qui force un type d'ennemi si name est non vide
 func combatWithAssignedType(currentMap string, isSuper bool, name string) interface{} {
-	rand.Seed(time.Now().UnixNano())
-
 	// Joueur
 	player := buildPlayerCharacter()
 

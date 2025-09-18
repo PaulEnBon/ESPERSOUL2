@@ -79,25 +79,35 @@ var npcDialogues = map[string]map[string]struct {
 		},
 	},
 	"salle8": {
-		"3_3": {
+		"4_3": { // Paul au centre (x=4,y=3)
 			dialogues: []string{
-				"Bienvenue dans la salle des trésors secrets !",
-				"Seuls les plus braves aventuriers arrivent ici...",
-				"Ces coffres contiennent des récompenses exceptionnelles !",
-				"Que la chance soit avec toi, noble héros !",
+				"Bienvenue aventurier ! Je suis Paul, l'un des créateurs du jeu.",
+				"Ce donjon est le fruit de notre passion et de nos délires.",
+				"Merci d'y jouer et de nous soutenir !",
+				"Si tu trouves un bug, c'est sûrement Michael !",
 			},
 			reward: "pièces",
 			amount: 10,
 		},
-		"4_3": {
+		"3_3": { // Matheo à gauche (x=3,y=3)
 			dialogues: []string{
-				"Tu as découvert notre sanctuaire secret !",
-				"Ces trésors étaient cachés depuis des siècles...",
-				"Prends cette relique... ou tente ta chance pour la Dragon Lore !",
-				"Elle t'aidera dans tes futures aventures !",
+				"Salut ! Je suis Matheo, créateur et codeur fou.",
+				"J'ai passé des nuits blanches à imaginer des pièges et des boss.",
+				"Si tu trouves la salle trop dure, c'est ma faute !",
+				"Bonne chance, héros !",
 			},
-			reward: "épées",
+			reward: "potions",
 			amount: 2,
+		},
+		"5_3": { // Michael à droite (x=5,y=3)
+			dialogues: []string{
+				"Yo ! Michael ici, le testeur et équilibrageur du jeu.",
+				"J'ai râlé sur chaque bug et chaque boss trop fort.",
+				"Si tu trouves le jeu trop facile, c'est grâce à moi !",
+				"N'oublie pas de nous envoyer tes retours !",
+			},
+			reward: "clés",
+			amount: 1,
 		},
 	},
 	"salle11": {
