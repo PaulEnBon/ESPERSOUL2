@@ -103,33 +103,125 @@ func formatRecipeInputs(req map[string]int) string {
 
 // Menu principal du chaudron; bloquant jusqu'à sortie
 func openCauldron() {
-	fmt.Println("\n🧪 === CHAUDRON ALCHEMIQUE ===")
-	fmt.Println("Mélangez des composants de monstres pour forger des artefacts uniques.")
-	fmt.Println("Tapez le numéro pour fabriquer, 'q' pour quitter.")
-	for {
+	// Collecte des ressources distinctes utilisées dans les recettes pour un affichage condensé
+	neededKeys := map[string]struct{}{}
+	for _, r := range cauldronRecipes {
+		for k := range r.inputs {
+			neededKeys[k] = struct{}{}
+		}
+	}
+
+	// Helper pour afficher l'inventaire pertinent
+	printInventory := func() {
+		fmt.Println("📦 Ingrédients possédés (pertinents):")
+		for k := range neededKeys {
+			fmt.Printf(" - %s: %d\n", k, playerInventory[k])
+		}
+	}
+
+	filterCraftable := false
+
+	// Helper: construit et affiche la liste des recettes de façon épurée
+	printRecipes := func() {
+		// Calcul largeur max des noms d'artefacts pour alignement
+		maxName := 0
+		for _, r := range cauldronRecipes {
+			if l := len(r.artefactName); l > maxName {
+				maxName = l
+			}
+		}
+		fmt.Println("\n🧪 === CHAUDRON ALCHEMIQUE ===")
+		fmt.Println("(Entrer numéro pour forger | f = filtre craftables | m <num> = détails manquants | q = quitter)")
+		printInventory()
+		fmt.Println("\nRecettes:")
 		for i, r := range cauldronRecipes {
+			owned := PossedeArtefact(&currentPlayer, r.artefactName)
+			has := cauldronHasInputs(r.inputs)
+			if filterCraftable && (!has || owned) { // filtrer ceux qu'on ne peut pas (ou déjà possédés)
+				continue
+			}
 			status := "❌"
-			if cauldronHasInputs(r.inputs) {
+			if has {
 				status = "✅"
 			}
-			// Vérifier possession
-			owned := PossedeArtefact(&currentPlayer, r.artefactName)
 			if owned {
-				status = "✔️ (déjà)"
+				status = "✔️"
 			}
-			fmt.Printf("%d) %s -> %s  [%s]\n", i+1, formatRecipeInputs(r.inputs), r.artefactName, status)
+			// Ligne épurée: index) Artefact  [status]  (si non craftable: liste courte manquants)
+			shortMissing := ""
+			if !has && !owned {
+				// construire liste des manquants sous forme k: besoin-restant
+				parts := []string{}
+				for k, v := range r.inputs {
+					have := playerInventory[k]
+					if have < v {
+						parts = append(parts, fmt.Sprintf("%s:%d", k, v-have))
+					}
+				}
+				shortMissing = strings.Join(parts, ",")
+				if shortMissing != "" {
+					shortMissing = " - manquants: " + shortMissing
+				}
+			}
+			// Format manquants: insère espaces après virgules pour lisibilité
+			if strings.Contains(shortMissing, ",") {
+				shortMissing = strings.ReplaceAll(shortMissing, ",", ", ")
+			}
+			fmt.Printf("%2d) %-*s  [%s]%s\n", i+1, maxName, r.artefactName, status, shortMissing)
 		}
+	}
+
+	// Détails manquants complets
+	showDetailedMissing := func(idx int) {
+		if idx < 0 || idx >= len(cauldronRecipes) {
+			return
+		}
+		r := cauldronRecipes[idx]
+		if PossedeArtefact(&currentPlayer, r.artefactName) {
+			fmt.Println("✔️ Déjà possédé.")
+			return
+		}
+		fmt.Printf("🔍 Détails ingrédients pour %s:\n", r.artefactName)
+		for k, v := range r.inputs {
+			have := playerInventory[k]
+			need := v
+			status := "OK"
+			if have < need {
+				status = fmt.Sprintf("manque %d", need-have)
+			}
+			fmt.Printf(" - %-18s %d/%d (%s)\n", k, have, need, status)
+		}
+		fmt.Println("(Entrer numéro pour forger, f pour filtrer, q pour quitter)")
+	}
+
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		printRecipes()
 		fmt.Print("> ")
-		var in string
-		fmt.Scanln(&in)
-		in = strings.TrimSpace(strings.ToLower(in))
-		if in == "q" {
+		line, _ := reader.ReadString('\n')
+		line = strings.TrimSpace(strings.ToLower(line))
+		if line == "q" {
 			break
 		}
+		if line == "f" {
+			filterCraftable = !filterCraftable
+			continue
+		}
+		if strings.HasPrefix(line, "m ") { // m <num>
+			var which int
+			fmt.Sscanf(line[2:], "%d", &which)
+			if which >= 1 && which <= len(cauldronRecipes) {
+				showDetailedMissing(which - 1)
+			} else {
+				fmt.Println("Index invalide pour m <num>.")
+			}
+			continue
+		}
+		// Essayer parse numéro direct
 		idx := -1
-		fmt.Sscanf(in, "%d", &idx)
+		fmt.Sscanf(line, "%d", &idx)
 		if idx < 1 || idx > len(cauldronRecipes) {
-			fmt.Println("Choix invalide.")
+			fmt.Println("Entrée inconnue.")
 			continue
 		}
 		rec := cauldronRecipes[idx-1]
@@ -138,7 +230,7 @@ func openCauldron() {
 			continue
 		}
 		if !cauldronHasInputs(rec.inputs) {
-			fmt.Println("Ingrédients insuffisants.")
+			fmt.Println("Ingrédients insuffisants (utilisez m", idx, "pour voir les détails).")
 			continue
 		}
 		art, ok := cauldronGetArtefact(rec.artefactName)
@@ -148,7 +240,6 @@ func openCauldron() {
 		}
 		cauldronConsume(rec.inputs)
 		AjouterArtefactPossede(&currentPlayer, art)
-		// Essaie de l'équiper si un slot vide existe
 		equipped := false
 		for slot := 0; slot < MaxArtefactsEquipes; slot++ {
 			if slot >= len(currentPlayer.ArtefactsEquipes) || currentPlayer.ArtefactsEquipes[slot] == nil {
@@ -518,8 +609,6 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 				mapData[newY][newX] = 1
 				addHUDMessage("✅ Ennemi vaincu. Passage dégagé.")
 			}
-		} else {
-			addHUDMessage("⛔ Vous restez à votre position.")
 		}
 		return false, currentMap
 
@@ -697,9 +786,43 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 		}
 		return false, currentMap
 
-	case 79: // Chaudron alchimique (craft artefacts)
-		fmt.Println("Vous découvrez un chaudron bouillonnant...")
-		openCauldron()
+	case 79: // Chaudron alchimique (sorcier)
+		// Petit dialogue avant d'ouvrir l'interface du chaudron
+		readKey := func() rune {
+			if globalKeyEvents == nil { // fallback minimal
+				return 0
+			}
+			e := <-globalKeyEvents
+			draining := true
+			for draining {
+				select {
+				case next := <-globalKeyEvents:
+					e = next
+				default:
+					draining = false
+				}
+			}
+			r := e.Rune
+			if r >= 'A' && r <= 'Z' {
+				r += 32
+			}
+			return r
+		}
+
+		fmt.Println("\n💬 === SORCIER ALCHEMISTE ===")
+		fmt.Println("🧪 Sorcier: Approche, aventurier. Mon chaudron renferme des secrets anciens.")
+		fmt.Println("🧪 Sorcier: Avec les bonnes composantes, je peux forger des artefacts puissants.")
+		fmt.Println("🧪 Sorcier: Veux-tu accéder au chaudron ? (o/n)")
+		fmt.Print("> ")
+		ans := readKey()
+		if ans == 'o' {
+			fmt.Println("Sorcier: Très bien, contemple la transmutation...")
+			openCauldron()
+		} else {
+			fmt.Println("Sorcier: Reviens quand tu auras plus de composants.")
+		}
+		fmt.Println("(Appuyez sur une touche pour continuer)")
+		_ = readKey()
 		return false, currentMap
 
 	case 3: // PNJ

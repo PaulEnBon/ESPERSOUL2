@@ -135,7 +135,15 @@ func EquiperArmure(p *Personnage, armures []Armure) error {
 	p.Armure += a.Defense
 	p.ResistMag += a.Resistance
 	p.PVMax += a.HP
+	// Ancien comportement: on ajoutait seulement le bonus HP.
+	// Nouveau: on considère qu'un changement d'armure correspond à un "repos" => PV plein.
+	// On fixe donc PV au cap après recalcul.
 	p.PV += a.HP
+	if p.PV > p.PVMax { // sécurité (devrait toujours être vrai ici)
+		p.PV = p.PVMax
+	}
+	// Heal complet explicite
+	p.PV = p.PVMax
 	return nil
 }
 
@@ -170,6 +178,8 @@ func AmeliorerArmure(p *Personnage, maxNiveau int) error {
 	p.NiveauArmure++
 	// Ré-initialiser les stats de base puis ré-appliquer l'équipement au nouveau niveau
 	RecomputeFromBaseAndEquip(p)
+	// Heal complet après amélioration (logique de renforcement + repos)
+	p.PV = p.PVMax
 	return nil
 }
 

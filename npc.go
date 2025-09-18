@@ -101,7 +101,8 @@ var npcDialogues = map[string]map[string]struct {
 		},
 	},
 	"salle11": {
-		"3_2": { // PNJ soigneur au centre
+		// PNJ soigneur en (2,2)
+		"2_2": {
 			dialogues: []string{
 				"Bienvenue au sanctuaire de repos.",
 				"Je peux te soigner complètement pour 10 pièces.",
@@ -116,6 +117,8 @@ var npcDialogues = map[string]map[string]struct {
 // Système de dialogue avec les PNJ
 func showDialogue(currentMap string, x, y int) {
 	key := fmt.Sprintf("%d_%d", x, y)
+
+	// (debug soigneur retiré)
 
 	// Helper: read a single key (last of any burst), returns lowercase rune
 	readKey := func() rune {
@@ -243,6 +246,33 @@ func showDialogue(currentMap string, x, y int) {
 	// Dialogue normal pour les autres PNJ
 	npcData, exists := npcDialogues[currentMap][key]
 	if !exists {
+		// Fallback spécifique soigneur salle11 si la tile est bien un PNJ (valeur 3 sur la map)
+		if currentMap == "salle11" && key == "3_2" {
+			fmt.Println("\n💬 === DIALOGUE ===")
+			fmt.Println("🧙 Soigneur: Bienvenue au sanctuaire de repos.")
+			fmt.Println("🧙 Soigneur: Je peux te soigner complètement pour 10 pièces.")
+			fmt.Println("🧙 Soigneur: Appuie sur O pour accepter, N pour refuser.")
+			fmt.Print("🧙 Soigneur: Souhaitez-vous être soigné pour 10 pièces ? (o/n): ")
+			ans := readKey()
+			if ans == 'o' {
+				if playerInventory["pièces"] >= 10 {
+					playerInventory["pièces"] -= 10
+					// Recalcule PVMax via ré-application armure pour cohérence
+					tmp := currentPlayer
+					_ = EquiperArmure(&tmp, tmp.ArmuresDisponibles)
+					currentPlayer.PV = tmp.PVMax
+					fmt.Println("✨ Vous êtes complètement soigné !")
+				} else {
+					fmt.Println("🚫 Vous n'avez pas assez de pièces.")
+				}
+			} else {
+				fmt.Println("Très bien, revenez si besoin.")
+			}
+			fmt.Print("Appuyez sur une touche pour fermer...")
+			_ = readKey()
+			fmt.Println("===================")
+			return
+		}
 		// Cas fallback: si c'est le mentor transformé mais dialogues non trouvés
 		if currentMap == "salle1" && key == "8_3" {
 			fmt.Println("🧙 Mentor Suprême: Merci de m'avoir libéré !")
@@ -252,8 +282,8 @@ func showDialogue(currentMap string, x, y int) {
 		return
 	}
 
-	// Cas spécial: soigneur de salle11 (3,2)
-	if currentMap == "salle11" && key == "3_2" {
+	// Cas spécial: soigneur de salle11 (2,2)
+	if currentMap == "salle11" && key == "2_2" {
 		fmt.Println("\n💬 === DIALOGUE ===")
 		for i, line := range npcData.dialogues {
 			fmt.Printf("🧙 Soigneur: %s\n", line)
@@ -283,6 +313,8 @@ func showDialogue(currentMap string, x, y int) {
 		fmt.Println("===================")
 		return
 	}
+
+	// (alchimiste retiré: interaction gérée par tile 79 dans game_loop)
 
 	fmt.Println("\n💬 === DIALOGUE ===")
 	for i, line := range npcData.dialogues {
