@@ -55,6 +55,7 @@ func printInventoryScreen() {
 	fmt.Printf("   🗝️ Clés spéciales:  %d\n", playerInventory["clés_spéciales"])
 	fmt.Printf("   ⛏️ Pioche:          %d\n", playerInventory["pioche"])
 	fmt.Printf("   🪨 Roches évol.:    %d\n", currentPlayer.Roches)
+	fmt.Printf("   ⚔️ Épées:           %d\n", playerInventory["épées"])
 	fmt.Println()
 
 	// Section consommables
@@ -105,8 +106,8 @@ func printInventoryScreen() {
 	fmt.Println("🛡️ ÉQUIPEMENT")
 	fmt.Printf("   Arme actuelle:      %s\n", weaponName)
 	fmt.Printf("   Armure actuelle:    %s\n", armorName)
-	if playerStats.hasLegendaryWeapon {
-		fmt.Println("   🌟 Arme légendaire active: Excalibur")
+	if currentPlayer.ArmeEquipee.Nom == dragonLore.Nom {
+		fmt.Println("   🌟 Arme légendaire active: AWP Dragon Lore")
 	}
 	fmt.Println()
 
@@ -145,44 +146,6 @@ func printInventoryScreen() {
 	fmt.Println()
 
 	fmt.Printf("☠️  Ennemis tués au total: %d\n", playerStats.enemiesKilled)
-
-	// Section Loots spécifiques (affiche seulement ceux possédés)
-	fmt.Println()
-	fmt.Println("🧬 LOOTS SPÉCIFIQUES")
-	keys := []struct{ key, label string }{
-		{"dent_rat", "Dent de Rat"},
-		{"dent_rat_luisante", "Dent de Rat Luisante"},
-		{"gelée_visqueuse", "Gelée Visqueuse"},
-		{"coeur_de_gelée", "Cœur de Gelée"},
-		{"capuche_brigand", "Capuche de Brigand"},
-		{"dague_ensorcelée", "Dague Ensorcelée"},
-		{"plume_fleche", "Plume de Flèche"},
-		{"carquois_gravé", "Carquois Gravé"},
-		{"cendre_infernale", "Cendre Infernale"},
-		{"braise_eternelle", "Braise Éternelle"},
-		{"insigne_chevalier", "Insigne de Chevalier"},
-		{"lame_ancient", "Lame Ancienne"},
-		{"sang_berserker", "Sang de Berserker"},
-		{"talisman_fureur", "Talisman de Fureur"},
-		{"essence_sombre", "Essence Sombre"},
-		{"noyau_occulte", "Noyau Occulte"},
-		{"corne_demon", "Corne de Démon"},
-		{"fragment_demoniaque", "Fragment Démoniaque"},
-		{"parchemin_arcane", "Parchemin Arcane"},
-		{"sceau_archimage", "Sceau d'Archimage"},
-		{"embleme_champion", "Emblème de Champion"},
-		{"aiguille_du_destin", "Aiguille du Destin"},
-	}
-	shown := 0
-	for _, it := range keys {
-		if q := playerInventory[it.key]; q > 0 {
-			fmt.Printf("   %-22s %d\n", it.label+":", q)
-			shown++
-		}
-	}
-	if shown == 0 {
-		fmt.Println("   (Aucun pour l'instant)")
-	}
 	fmt.Println("════════════════════════════════════════════════════════════")
 	fmt.Println("(I/Esc/Entrée = retour | A = artefacts | F = filtre consommables)")
 }

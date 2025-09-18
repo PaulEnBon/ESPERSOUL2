@@ -3,7 +3,6 @@ package main
 import (
 	"math"
 	"math/rand"
-	"time"
 )
 
 // ==========================
@@ -32,7 +31,6 @@ func AttaqueReussie(attaquant *Personnage) bool {
 	if PossedeArtefact(attaquant, "Lunette d'Erwann") {
 		return true
 	}
-	rand.Seed(time.Now().UnixNano())
 	tauxPrecision := CalculerPrecision(attaquant)
 	return rand.Float64() < tauxPrecision
 }

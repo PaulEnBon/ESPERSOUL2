@@ -38,31 +38,30 @@ func showMerchantInterface() {
 		fmt.Printf("🗝️  Vos clés rouillées: %d\n", playerInventory["clés_spéciales"])
 		fmt.Printf("💊 Vos Puff 9K: %d\n", playerInventory["puff_9k"])
 		fmt.Println("\n📜 Articles disponibles:")
-		fmt.Println("1. Potion de soin - 5 pièces")
-		fmt.Println("2. Clé magique - 10 pièces")
-		fmt.Println("3. Vielle clé rouillée - 50 pièces")
-		fmt.Println("4. 💊 Puff 9K - 20 pièces (+15% attaque, -5HP)")
+		fmt.Println("1. Clé magique - 10 pièces")
+		fmt.Println("2. Vielle clé rouillée - 50 pièces")
+		fmt.Println("3. 💊 Puff 9K - 20 pièces (+15% attaque, -5HP)")
 		// Nouveaux objets
-		fmt.Println("5. Antidote - 6 pièces")
-		fmt.Println("6. Potion mineure - 3 pièces")
-		fmt.Println("7. Potion majeure - 10 pièces")
-		fmt.Println("8. Potion suprême - 25 pièces")
-		fmt.Println("9. Potion de dégâts - 6 pièces")
-		fmt.Println("i. Hache - 30 pièces (permet de couper les arbres)")
-		fmt.Println("h. Vodka de Vitaly - 50 pièces (régénère toute la vie)")
-		fmt.Println("a. Bombe incendiaire - 12 pièces")
-		fmt.Println("b. Bombe givrante - 14 pièces")
-		fmt.Println("c. Grenade fumigène - 8 pièces")
-		fmt.Println("d. Parchemin de dispersion - 10 pièces")
-		fmt.Println("e. Élixir de force - 12 pièces")
-		fmt.Println("f. Élixir de vitesse - 10 pièces")
-		fmt.Println("g. Élixir de précision - 15 pièces")
+		fmt.Println("4. Antidote - 6 pièces")
+		fmt.Println("5. Potion mineure - 3 pièces")
+		fmt.Println("6. Potion majeure - 10 pièces")
+		fmt.Println("7. Potion suprême - 25 pièces")
+		fmt.Println("8. Potion de dégâts - 6 pièces")
+		fmt.Println("a. Hache - 30 pièces (permet de couper les arbres)")
+		fmt.Println("b. Vodka de Vitaly - 50 pièces (régénère toute la vie)")
+		fmt.Println("c. Bombe incendiaire - 12 pièces")
+		fmt.Println("d. Bombe givrante - 14 pièces")
+		fmt.Println("e. Grenade fumigène - 8 pièces")
+		fmt.Println("f. Parchemin de dispersion - 10 pièces")
+		fmt.Println("g. Élixir de force - 12 pièces")
+		fmt.Println("h. Élixir de vitesse - 10 pièces")
+		fmt.Println("i. Élixir de précision - 15 pièces")
 		fmt.Println("q. Quitter le magasin")
 		fmt.Print("Choisissez un article (1-9, a-g, i, q): ")
 		key := readKey()
 
 		switch key {
-		case 'h': // Vodka de Vitaly - 50 pièces
+		case 'b': // Vodka de Vitaly - 50 pièces
 			if playerInventory["pièces"] >= 50 {
 				playerInventory["pièces"] -= 50
 				playerInventory["vodka_vitaly"]++
@@ -70,16 +69,8 @@ func showMerchantInterface() {
 			} else {
 				fmt.Println("❌ Vous n'avez pas assez de pièces! (50 pièces nécessaires)")
 			}
-		case '1':
-			if playerInventory["pièces"] >= 5 {
-				playerInventory["pièces"] -= 5
-				playerInventory["potions"]++
-				fmt.Println("✨ Vous avez acheté une potion de soin!")
-			} else {
-				fmt.Println("❌ Vous n'avez pas assez de pièces!")
-			}
 
-		case '2':
+		case '1':
 			if playerInventory["pièces"] >= 10 {
 				playerInventory["pièces"] -= 10
 				playerInventory["clés"]++
@@ -88,7 +79,7 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces!")
 			}
 
-		case '3':
+		case '2':
 			if playerInventory["pièces"] >= 50 {
 				playerInventory["pièces"] -= 50
 				playerInventory["clés_spéciales"]++
@@ -97,7 +88,7 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces! (50 pièces nécessaires)")
 			}
 
-		case '4':
+		case '3':
 			if playerInventory["pièces"] >= 20 {
 				playerInventory["pièces"] -= 20
 				playerInventory["puff_9k"]++
@@ -107,7 +98,7 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces! (20 pièces nécessaires)")
 			}
 
-		case '5': // Antidote - 6 pièces
+		case '4': // Antidote - 6 pièces
 			if playerInventory["pièces"] >= 6 {
 				playerInventory["pièces"] -= 6
 				playerInventory["antidote"]++
@@ -116,7 +107,7 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces! (6 pièces nécessaires)")
 			}
 
-		case '6': // Potion mineure - 3 pièces
+		case '5': // Potion mineure - 3 pièces
 			if playerInventory["pièces"] >= 3 {
 				playerInventory["pièces"] -= 3
 				playerInventory["potion_mineure"]++
@@ -125,7 +116,7 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces! (3 pièces nécessaires)")
 			}
 
-		case '7': // Potion majeure - 10 pièces
+		case '6': // Potion majeure - 10 pièces
 			if playerInventory["pièces"] >= 10 {
 				playerInventory["pièces"] -= 10
 				playerInventory["potion_majeure"]++
@@ -134,7 +125,7 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces! (10 pièces nécessaires)")
 			}
 
-		case '8': // Potion suprême - 25 pièces
+		case '7': // Potion suprême - 25 pièces
 			if playerInventory["pièces"] >= 25 {
 				playerInventory["pièces"] -= 25
 				playerInventory["potion_supreme"]++
@@ -143,7 +134,7 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces! (25 pièces nécessaires)")
 			}
 
-		case '9': // Potion de dégâts - 6 pièces
+		case '8': // Potion de dégâts - 6 pièces
 			if playerInventory["pièces"] >= 6 {
 				playerInventory["pièces"] -= 6
 				playerInventory["potion_degats"]++
@@ -152,7 +143,7 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces! (6 pièces nécessaires)")
 			}
 
-		case 'i': // Hache - 30 pièces
+		case 'a': // Hache - 30 pièces
 			if playerInventory["pièces"] >= 30 {
 				playerInventory["pièces"] -= 30
 				playerInventory["hache"]++
@@ -162,7 +153,7 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces! (30 pièces nécessaires)")
 			}
 
-		case 'a': // Bombe incendiaire - 12 pièces
+		case 'c': // Bombe incendiaire - 12 pièces
 			if playerInventory["pièces"] >= 12 {
 				playerInventory["pièces"] -= 12
 				playerInventory["bombe_incendiaire"]++
@@ -171,7 +162,7 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces! (12 pièces nécessaires)")
 			}
 
-		case 'b': // Bombe givrante - 14 pièces
+		case 'd': // Bombe givrante - 14 pièces
 			if playerInventory["pièces"] >= 14 {
 				playerInventory["pièces"] -= 14
 				playerInventory["bombe_givrante"]++
@@ -180,7 +171,7 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces! (14 pièces nécessaires)")
 			}
 
-		case 'c': // Grenade fumigène - 8 pièces
+		case 'e': // Grenade fumigène - 8 pièces
 			if playerInventory["pièces"] >= 8 {
 				playerInventory["pièces"] -= 8
 				playerInventory["grenade_fumigene"]++
@@ -189,7 +180,7 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces! (8 pièces nécessaires)")
 			}
 
-		case 'd': // Parchemin de dispersion - 10 pièces
+		case 'f': // Parchemin de dispersion - 10 pièces
 			if playerInventory["pièces"] >= 10 {
 				playerInventory["pièces"] -= 10
 				playerInventory["parchemin_dispersion"]++
@@ -198,7 +189,7 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces! (10 pièces nécessaires)")
 			}
 
-		case 'e': // Élixir de force - 12 pièces
+		case 'g': // Élixir de force - 12 pièces
 			if playerInventory["pièces"] >= 12 {
 				playerInventory["pièces"] -= 12
 				playerInventory["elixir_force"]++
@@ -207,7 +198,7 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces! (12 pièces nécessaires)")
 			}
 
-		case 'f': // Élixir de vitesse - 10 pièces
+		case 'h': // Élixir de vitesse - 10 pièces
 			if playerInventory["pièces"] >= 10 {
 				playerInventory["pièces"] -= 10
 				playerInventory["elixir_vitesse"]++
@@ -216,7 +207,7 @@ func showMerchantInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces! (10 pièces nécessaires)")
 			}
 
-		case 'g': // Élixir de précision - 15 pièces
+		case 'i': // Élixir de précision - 15 pièces
 			if playerInventory["pièces"] >= 15 {
 				playerInventory["pièces"] -= 15
 				playerInventory["elixir_critique"]++
@@ -281,8 +272,8 @@ func showForgeInterface() {
 			if err := AmeliorerArme(&currentPlayer, len(currentPlayer.ArmesDisponibles)); err != nil {
 				fmt.Printf("❌ %v\n", err)
 			} else {
-				// Met à jour l'arme équipée sans double-ajout des bonus
-				if currentPlayer.NiveauArme < len(currentPlayer.ArmesDisponibles) {
+				// Ne pas écraser une arme spéciale déjà équipée (ex: Dragon Lore)
+				if currentPlayer.ArmeEquipee.Nom == "" && currentPlayer.NiveauArme < len(currentPlayer.ArmesDisponibles) {
 					currentPlayer.ArmeEquipee = currentPlayer.ArmesDisponibles[currentPlayer.NiveauArme]
 				}
 				fmt.Printf("✅ Arme améliorée → %s (niv %d)\n", currentPlayer.ArmeEquipee.Nom, currentPlayer.NiveauArme)
@@ -315,7 +306,7 @@ func showForgeInterface() {
 
 // Interface de gambling
 func showGamblingInterface() {
-	rand.Seed(time.Now().UnixNano())
+	// Note: Go 1.20+ auto-seeds the RNG
 
 	readKey := func() rune {
 		if globalKeyEvents == nil {
@@ -343,15 +334,15 @@ func showGamblingInterface() {
 		fmt.Printf("💰 Vos pièces: %d\n", playerInventory["pièces"])
 		// Retiré: affichage des épées
 		fmt.Printf("💊 Vos Puff 9K: %d\n", playerInventory["puff_9k"])
-		if playerStats.hasLegendaryWeapon {
-			fmt.Println("🌟 Arme légendaire équipée !")
+		if currentPlayer.ArmeEquipee.Nom == dragonLore.Nom {
+			fmt.Println("🌟 AWP Dragon Lore équipée !")
 		}
 
 		fmt.Println("\n📦 Caisses disponibles:")
 		fmt.Println("1. Caisse Bronze - 5 pièces (Chances mystérieuses...)")
 		fmt.Println("2. Caisse Argent - 25 pièces (Bonnes chances)")
 		fmt.Println("3. Caisse Or - 75 pièces (Très bonnes chances)")
-		fmt.Println("4. Caisse Legendary - 150 pièces (Garanti légendaire !)")
+		fmt.Println("4. Caisse Legendary - 150 pièces (Garanti Dragon Lore !)")
 		fmt.Println("5. Quitter le casino")
 		fmt.Print("Choisissez une caisse (1-5): ")
 		key := readKey()
@@ -364,10 +355,10 @@ func showGamblingInterface() {
 				time.Sleep(1 * time.Second)
 
 				roll := rand.Intn(100)
-				if roll < 2 { // 2% chance d'arme légendaire
-					playerStats.hasLegendaryWeapon = true
-					fmt.Println("🌟 JACKPOT ! Vous obtenez l'EXCALIBUR LÉGENDAIRE !")
-					fmt.Println("⚡ +50% de dégâts d'attaque permanents !")
+				if roll < 2 { // 2% chance Dragon Lore
+					_ = EquiperArme(&currentPlayer, dragonLore)
+					fmt.Println("🐉 JACKPOT ! Vous obtenez l'AWP DRAGON LORE !")
+					fmt.Println("🔥 Arme ultime équipée.")
 				} else if roll < 10 { // 8% chance d'épées
 					amount := 1 + rand.Intn(2) // 1-2 épées
 					addToInventory("épées", amount)
@@ -391,10 +382,10 @@ func showGamblingInterface() {
 				time.Sleep(1 * time.Second)
 
 				roll := rand.Intn(100)
-				if roll < 5 { // 5% chance d'arme légendaire
-					playerStats.hasLegendaryWeapon = true
-					fmt.Println("🌟 INCROYABLE ! Vous obtenez l'EXCALIBUR LÉGENDAIRE !")
-					fmt.Println("⚡ +50% de dégâts d'attaque permanents !")
+				if roll < 5 { // 5% chance Dragon Lore
+					_ = EquiperArme(&currentPlayer, dragonLore)
+					fmt.Println("🐉 INCROYABLE ! Vous obtenez l'AWP DRAGON LORE !")
+					fmt.Println("🔥 Arme ultime équipée.")
 				} else if roll < 25 { // 20% chance d'épées multiples
 					amount := 2 + rand.Intn(3) // 2-4 épées
 					addToInventory("épées", amount)
@@ -419,10 +410,10 @@ func showGamblingInterface() {
 				time.Sleep(1 * time.Second)
 
 				roll := rand.Intn(100)
-				if roll < 15 { // 15% chance d'arme légendaire
-					playerStats.hasLegendaryWeapon = true
-					fmt.Println("🌟 FANTASTIQUE ! Vous obtenez l'EXCALIBUR LÉGENDAIRE !")
-					fmt.Println("⚡ +50% de dégâts d'attaque permanents !")
+				if roll < 15 { // 15% chance Dragon Lore
+					_ = EquiperArme(&currentPlayer, dragonLore)
+					fmt.Println("🐉 FANTASTIQUE ! Vous obtenez l'AWP DRAGON LORE !")
+					fmt.Println("🔥 Arme ultime équipée.")
 				} else if roll < 40 { // 25% chance d'épées premium
 					amount := 3 + rand.Intn(3) // 3-5 épées
 					addToInventory("épées", amount)
@@ -446,9 +437,9 @@ func showGamblingInterface() {
 				fmt.Println("📦 *Ouverture de la caisse LEGENDARY...*")
 				time.Sleep(2 * time.Second)
 
-				playerStats.hasLegendaryWeapon = true
-				fmt.Println("🌟 LÉGENDAIRE GARANTI ! Vous obtenez l'EXCALIBUR LÉGENDAIRE !")
-				fmt.Println("⚡ +50% de dégâts d'attaque permanents !")
+				_ = EquiperArme(&currentPlayer, dragonLore)
+				fmt.Println("🐉 DRAGON LORE GARANTI ! Vous obtenez l'AWP DRAGON LORE !")
+				fmt.Println("🔥 Arme ultime équipée.")
 
 				// Bonus supplémentaire
 				bonusRoll := rand.Intn(3)

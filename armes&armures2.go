@@ -76,7 +76,8 @@ func RecomputeFromBaseAndEquip(p *Personnage) {
 
 	oldPV := p.PV
 	oldPVMax := p.PVMax
-	basePVMax := base.PVMax
+	// Préserver l'arme actuellement équipée (ex: Dragon Lore) afin de ne pas la perdre lors d'une amélioration
+	savedWeapon := p.ArmeEquipee
 
 	// Remettre les stats de base de la classe
 	p.PVMax = base.PVMax
@@ -95,20 +96,17 @@ func RecomputeFromBaseAndEquip(p *Personnage) {
 	if p.NiveauArmure >= 0 && p.NiveauArmure < len(p.ArmuresDisponibles) {
 		_ = EquiperArmure(p, p.ArmuresDisponibles)
 	}
-	// Ré-appliquer l'arme selon le niveau actuel
-	if p.NiveauArme >= 0 && p.NiveauArme < len(p.ArmesDisponibles) {
+	// Ré-appliquer l'arme: priorité à l'arme déjà équipée (ex: Dragon Lore), sinon fallback par niveau
+	if savedWeapon.Nom != "" {
+		_ = EquiperArme(p, savedWeapon)
+	} else if p.NiveauArme >= 0 && p.NiveauArme < len(p.ArmesDisponibles) {
 		_ = EquiperArme(p, p.ArmesDisponibles[p.NiveauArme])
 	}
 
-	// PV effectifs: conserver la proportion par rapport à la base, puis ajouter les HP d'armure
+	// Préserver le ratio de PV après la montée de stats
 	if oldPVMax > 0 {
 		ratio := float64(oldPV) / float64(oldPVMax)
-		armorHP := 0
-		if p.ArmureEquipee.Nom != "" {
-			armorHP = p.ArmureEquipee.HP
-		}
-		scaledBase := int(ratio * float64(basePVMax))
-		newPV := scaledBase + armorHP
+		newPV := int(ratio * float64(p.PVMax))
 		if newPV < 1 {
 			newPV = 1
 		}
@@ -293,98 +291,98 @@ var ArmesErwann = []Arme{
 }
 
 var ArmuresSoldat = []Armure{
-	{"Armure de Recrue", 8, 2, 8},
-	{"Cuirasse du Sergent", 15, 5, 18}, // ~x1.8 déf / +125% HP vs tier1
-	{"Armure de Général", 27, 9, 35},   // saut plus marqué
-	{"Armure du Maréchal", 45, 14, 60}, // exponentiel final
+	{"Armure de Recrue", 10, 2, 10},
+	{"Cuirasse du Sergent", 17, 5, 20},
+	{"Armure de Général", 25, 8, 35},
+	{"Armure du Maréchal", 34, 12, 50},
 }
 var ArmuresCRS = []Armure{
-	{"Gilet Pare-Balles Standard", 10, 4, 15},
-	{"Tenue Anti-Émeute", 19, 7, 30},
-	{"Armure Blindée CRS", 33, 11, 55},
-	{"Exo-Riot Intégrale", 55, 16, 85},
+	{"Gilet Pare-Balles Standard", 12, 4, 15},
+	{"Tenue Anti-Émeute", 20, 7, 25},
+	{"Armure Blindée CRS", 30, 10, 40},
+	{"Exo-Riot Intégrale", 40, 14, 60},
 }
 var ArmuresPyromane = []Armure{
-	{"Veste Ignifugée", 5, 10, 5},
-	{"Combinaison Thermique", 8, 18, 12},
-	{"Tenue de Pyromancien", 12, 30, 22},
-	{"Parure du Pyromancien Royal", 18, 45, 38},
+	{"Veste Ignifugée", 6, 12, 5},
+	{"Combinaison Thermique", 9, 18, 10},
+	{"Tenue de Pyromancien", 12, 25, 20},
+	{"Parure du Pyromancien Royal", 15, 33, 30},
 }
 var ArmuresRobin = []Armure{
-	{"Tunique de Forêt", 7, 3, 9},
-	{"Armure de Chasseur", 12, 6, 18},
-	{"Cape de la Sylve", 20, 10, 32},
-	{"Cape de l'Archéon", 32, 15, 55},
+	{"Tunique de Forêt", 8, 3, 10},
+	{"Armure de Chasseur", 13, 6, 15},
+	{"Cape de la Sylve", 18, 10, 25},
+	{"Cape de l'Archéon", 23, 14, 35},
 }
 var ArmuresBoucher = []Armure{
-	{"Tablier de Boucher", 9, 2, 10},
-	{"Plastron Sanguinolent", 16, 5, 22},
-	{"Armure du Massacreur", 27, 9, 40},
-	{"Cuirasse du Carnassier", 44, 13, 65},
+	{"Tablier de Boucher", 10, 2, 10},
+	{"Plastron Sanguinolent", 17, 5, 20},
+	{"Armure du Massacreur", 24, 8, 35},
+	{"Cuirasse du Carnassier", 32, 11, 50},
 }
 var ArmuresCroMagnon = []Armure{
-	{"Peaux de Bête", 10, 2, 12},
-	{"Tenue Tribale Renforcée", 17, 4, 24},
-	{"Armure de Chasseur Primitif", 29, 7, 42},
-	{"Armure du Chasseur Alpha", 48, 11, 68},
+	{"Peaux de Bête", 12, 2, 12},
+	{"Tenue Tribale Renforcée", 18, 4, 22},
+	{"Armure de Chasseur Primitif", 25, 7, 35},
+	{"Armure du Chasseur Alpha", 33, 10, 50},
 }
 var ArmuresZeus = []Armure{
-	{"Robe Électrique", 5, 14, 5},
-	{"Tunique du Tonnerre", 8, 24, 12},
-	{"Armure Divine de Zeus", 12, 38, 22},
-	{"Panoplie Olympienne", 18, 55, 38},
+	{"Robe Électrique", 6, 15, 5},
+	{"Tunique du Tonnerre", 9, 23, 10},
+	{"Armure Divine de Zeus", 12, 32, 20},
+	{"Panoplie Olympienne", 15, 42, 30},
 }
 var ArmuresSamourai = []Armure{
-	{"Kimono de Combat", 9, 5, 8},
-	{"Armure Légère de Samouraï", 15, 8, 18},
-	{"Armure d’Élite Shogun", 24, 12, 32},
-	{"Armure du Daimyo", 38, 17, 52},
+	{"Kimono de Combat", 10, 5, 8},
+	{"Armure Légère de Samouraï", 16, 8, 15},
+	{"Armure d’Élite Shogun", 22, 12, 25},
+	{"Armure du Daimyo", 28, 16, 35},
 }
 var ArmuresGandalf = []Armure{
-	{"Robe d’Apprenti", 5, 11, 5},
-	{"Robe Arcanique", 8, 21, 12},
-	{"Robe du Grand Mage", 12, 34, 22},
-	{"Robe du Sage Éternel", 18, 50, 38},
+	{"Robe d’Apprenti", 6, 12, 5},
+	{"Robe Arcanique", 10, 20, 10},
+	{"Robe du Grand Mage", 14, 30, 20},
+	{"Robe du Sage Éternel", 18, 40, 30},
 }
 var ArmuresSinge = []Armure{
-	{"Peau de Banane", 5, 4, 5},
-	{"Costume de Singe Ninja", 9, 7, 12},
-	{"Armure Royale Simiesque", 16, 13, 22},
-	{"Armure Mythique Simiesque", 26, 18, 38},
+	{"Peau de Banane", 6, 4, 5},
+	{"Costume de Singe Ninja", 10, 7, 10},
+	{"Armure Royale Simiesque", 15, 12, 18},
+	{"Armure Mythique Simiesque", 20, 16, 28},
 }
 var ArmuresBambi = []Armure{
-	{"Gilet de Chasseur", 9, 5, 10},
-	{"Tactical Gear", 15, 9, 20},
-	{"Exo-Armure de Combat", 26, 15, 36},
-	{"Exo-Armure Tactique Mk II", 42, 21, 58},
+	{"Gilet de Chasseur", 10, 5, 10},
+	{"Tactical Gear", 16, 9, 18},
+	{"Exo-Armure de Combat", 24, 14, 30},
+	{"Exo-Armure Tactique Mk II", 32, 19, 45},
 }
 var ArmuresPoseidon = []Armure{
-	{"Cuirasse des Vagues", 14, 10, 18},
-	{"Armure de l’Abysse", 24, 17, 34},
-	{"Armure Royale de Poséidon", 38, 27, 58},
-	{"Armure du Souverain des Mers", 60, 40, 90},
+	{"Cuirasse des Vagues", 15, 10, 20},
+	{"Armure de l’Abysse", 22, 16, 30},
+	{"Armure Royale de Poséidon", 30, 25, 45},
+	{"Armure du Souverain des Mers", 40, 34, 65},
 }
 
 // Armure Vitaly (Ensemble Adidas) progression (focus défense magique + critique élevé)
 var ArmuresVitaly = []Armure{
-	{"Ensemble Adidas Classique", 14, 18, 25},
-	{"Ensemble Adidas Renforcé", 24, 30, 45},
-	{"Ensemble Adidas Légendaire", 39, 44, 70},
-	{"Ensemble Adidas Ultime", 62, 62, 105},
+	{"Ensemble Adidas Classique", 15, 20, 25},
+	{"Ensemble Adidas Renforcé", 25, 30, 40},
+	{"Ensemble Adidas Légendaire", 35, 40, 55},
+	{"Ensemble Adidas Ultime", 48, 55, 75},
 }
 
 // Armures de Gabriel (orienté ultra tank + PV massifs)
 var ArmuresGabriel = []Armure{
-	{"Toge Bénie", 24, 24, 110},
-	{"Plastron Séraphique", 40, 40, 190},
-	{"Armure des Archontes", 66, 66, 300},
-	{"Rempart Céleste", 100, 100, 470},
+	{"Toge Bénie", 25, 25, 120},
+	{"Plastron Séraphique", 35, 35, 180},
+	{"Armure des Archontes", 50, 50, 260},
+	{"Rempart Céleste", 65, 65, 350},
 }
 
 // Armures de la classe Erwann (équilibrées autour de tank techno)
 var ArmuresErwann = []Armure{
-	{"Coque Aluminium", 14, 11, 28},
-	{"Châssis Optimisé", 24, 19, 52},
-	{"Station de Travail", 38, 27, 86},
-	{"Serveur Blindé", 58, 38, 130},
+	{"Coque Aluminium", 15, 12, 30},
+	{"Châssis Optimisé", 22, 18, 50},
+	{"Station de Travail", 30, 24, 80},
+	{"Serveur Blindé", 40, 32, 110},
 }
