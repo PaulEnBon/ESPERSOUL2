@@ -108,6 +108,9 @@ var globalKeyEvents <-chan keyboard.KeyEvent
 // Flag pour demander un rechargement de la carte après utilisation du cheat menu
 var cheatReloadRequested bool
 
+// Flag to request returning to title from in-game
+var returnToTitleRequested bool
+
 // Applique l'état des ennemis vaincus sur la map
 func applyEnemyStates(mapData [][]int, currentMap string) {
 	for y := 0; y < len(mapData); y++ {
@@ -288,11 +291,13 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 	case 2, 12: // ennemi (2=normal, 12=super)
 		addHUDMessage("⚔️ Vous rencontrez une créature maudite !")
 		isSuper := (cell == 12)
+	// All enemies use the synthesized 4-skill kit
+	combatForceSynthKit = true
 		result := combat(currentMap, isSuper)
 
 		enemyKey := fmt.Sprintf("%d_%d", newX, newY)
 
-		// Si le joueur est mort (PV <= 0), régénérer, appliquer la perte de pièces et demander une transition vers salle1
+		// Si le joueur est mort (PV <= 0), appliquer la perte de pièces et déclencher l'écran Game Over
 		if currentPlayer.PV <= 0 {
 			loss := playerInventory["pièces"] * 35 / 100
 			if loss > 0 {
@@ -301,15 +306,8 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 			} else {
 				fmt.Println("☠️ Vous êtes mort.")
 			}
-
-			// Régénérer le personnage: PV = PVMax effectif avec armure équipée (sans modifier la base)
-			tmp := currentPlayer
-			_ = EquiperArmure(&tmp, tmp.ArmuresDisponibles)
-			// tmp.PVMax inclut le bonus d'armure; heal complet
-			currentPlayer.PV = tmp.PVMax
-			fmt.Println("↩️  Retour à la salle 1 (spawn). Vous êtes régénéré.")
-			// Demander une transition vers salle1, l'emplacement précis sera géré dans RunGameLoop
-			return true, "salle1"
+			// Transition spéciale gérée par RunGameLoop
+			return true, "GAME_OVER"
 		}
 
 		if result == "disappear" {
@@ -394,14 +392,15 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 			addHUDMessage("🛡️ Mini-Boss !")
 			// Combat super -> après combat on applique déjà scaling; on pourrait injecter un buff avant
 			// (Simplification: on laisse CreateRandomEnemyForMap + isSuper pour PV/crit de base)
+			// Mini-bosses also use the synthesized 4-skill kit
+			combatForceSynthKit = true
 			result := combat(currentMap, true)
 			if currentPlayer.PV <= 0 {
 				loss := playerInventory["pièces"] * 35 / 100
 				if loss > 0 {
 					playerInventory["pièces"] -= loss
 				}
-				// respawn salle1
-				return true, "salle1"
+				return true, "GAME_OVER"
 			}
 			if result == true || result == "disappear" { // vaincu
 				key := fmt.Sprintf("%d_%d", newX, newY)
@@ -441,13 +440,15 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 	case 68: // Boss final salle12
 		if currentMap == "salle12" && !salle12BossState.bossDefeated {
 			addHUDMessage("👹 Boss Niveau 1/4 !")
+			// Boss also uses the synthesized 4-skill kit
+			combatForceSynthKit = true
 			result := combat(currentMap, true)
 			if currentPlayer.PV <= 0 {
 				loss := playerInventory["pièces"] * 35 / 100
 				if loss > 0 {
 					playerInventory["pièces"] -= loss
 				}
-				return true, "salle1"
+				return true, "GAME_OVER"
 			}
 			if result == true || result == "disappear" {
 				addHUDMessage("🏆 Boss vaincu !")
@@ -466,6 +467,24 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 			st := &cfg.state
 			// Déterminer si case correspond à mini code de cette salle
 			if cell == cfg.codeMini {
+				// For salle15, assign specific names per mini-boss position
+				if currentMap == "salle15" {
+					// Map coordinates to requested names
+					name := ""
+					switch {
+					case newX == 1 && newY == 1:
+						name = "Khalamite"
+					case newX == 5 && newY == 1:
+						name = "Sofie Rain"
+					case newX == 1 && newY == 5:
+						name = "Antony Syruis"
+					case newX == 5 && newY == 5:
+						name = "Tom sur Snap"
+					}
+					if name != "" {
+						combatCustomEnemyName = name
+					}
+				}
 				addHUDMessage(fmt.Sprintf("🛡️ Mini-Boss Niveau %d !", cfg.level))
 				result := combat(currentMap, true)
 				if currentPlayer.PV <= 0 {
@@ -473,7 +492,7 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 					if loss > 0 {
 						playerInventory["pièces"] -= loss
 					}
-					return true, "salle1"
+					return true, "GAME_OVER"
 				}
 				if result == true || result == "disappear" {
 					key := fmt.Sprintf("%d_%d", newX, newY)
@@ -515,6 +534,10 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 			st := &cfg.state
 			if cell == cfg.codeBoss && !st.bossDefeated {
 				addHUDMessage(fmt.Sprintf("👹 Boss Niveau %d/4 !", cfg.level))
+				// For salle15 final boss, ensure name remains "Mia Khalifa"
+				if currentMap == "salle15" && cfg.level == 4 {
+					combatCustomEnemyName = "Mia Khalifa"
+				}
 				result := combat(currentMap, true)
 				if currentPlayer.PV <= 0 {
 					loss := playerInventory["pièces"] * 35 / 100
@@ -722,7 +745,7 @@ func openSecretChest(x, y int) {
 // Gère l'entrée utilisateur pour le déplacement et actions.
 // Retourne les nouvelles coordonnées (ou les mêmes si pas de déplacement) et un bool indiquant si la boucle doit continuer.
 func getPlayerMovement(events <-chan keyboard.KeyEvent, px, py int) (int, int, bool) {
-	fmt.Print("Déplacez-vous (ZQSD pour bouger, I=Inventaire, X=Quitter, *=Sauver): ")
+	fmt.Print("Déplacez-vous (ZQSD pour bouger, I=Inventaire, X=Quitter, *=Sauver, $=Menu): ")
 
 	// Afficher les messages HUD accumulés juste sous la ligne de déplacement
 	if len(hudMessages) > 0 {
@@ -778,6 +801,10 @@ func getPlayerMovement(events <-chan keyboard.KeyEvent, px, py int) (int, int, b
 	case input == "x":
 		fmt.Println("Vous quittez la partie. Merci d'avoir joué !")
 		return px, py, false
+	case input == "$":
+		// Request return to title; handled in main loop to safely switch contexts
+		returnToTitleRequested = true
+		return px, py, true
 	case input == "*":
 		// Quick save: use lastUsedSaveSlot or first empty
 		slot := lastUsedSaveSlot
@@ -920,6 +947,16 @@ func RunGameLoop(currentMap string) {
 			continue
 		}
 
+		// Retour menu principal demandé via touche '$'
+		if returnToTitleRequested {
+			// Fermer le clavier pour éviter les conflits avec tview
+			keyboard.Close()
+			globalKeyEvents = nil
+			returnToTitleRequested = false
+			StartMainMenu()
+			return
+		}
+
 		// Si les coordonnées n'ont pas changé (entrée invalide), continuer la boucle
 		if newX == px && newY == py {
 			continue
@@ -946,6 +983,45 @@ func RunGameLoop(currentMap string) {
 		}
 
 		if transitionNeeded {
+			// Handle special Game Over flow
+			if newMap == "GAME_OVER" {
+				// Close keyboard to avoid input conflicts with tview
+				keyboard.Close()
+				globalKeyEvents = nil
+				choice := ShowGameOverScreen()
+				// Re-open keyboard for subsequent gameplay
+				if err := keyboard.Open(); err != nil {
+					fmt.Println("Erreur d'accès clavier:", err)
+					return
+				}
+				events, err = keyboard.GetKeys(10)
+				if err != nil {
+					fmt.Println("Erreur d'initialisation du clavier:", err)
+					return
+				}
+				globalKeyEvents = events
+
+				if choice == GameOverTitle {
+					// Return to title screen by launching the main menu again
+					fmt.Println("Retour à l'écran titre...")
+					StartMainMenu()
+					return
+				}
+
+				// CONTINUER: Respawn at spawn in salle1 with half HP
+				tmp := currentPlayer
+				_ = EquiperArmure(&tmp, tmp.ArmuresDisponibles)
+				half := tmp.PVMax / 2
+				if half < 1 {
+					half = 1
+				}
+				currentPlayer.PV = half
+				currentMap = "salle1"
+				newMap = currentMap
+				spawnX, spawnY = 8, 5
+				haveSpawn = true
+			}
+
 			currentMap = newMap
 			mapData = copyMap(salles[currentMap])
 			// Ré-appliquer les décorations pour la nouvelle carte puis retirer les arbres coupés

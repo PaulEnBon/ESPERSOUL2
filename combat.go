@@ -11,6 +11,11 @@ import (
 	"github.com/eiannone/keyboard"
 )
 
+// Controls whether enemies use the synthesized 4-skill kit (true for all normal monsters)
+var combatForceSynthKit = true
+// Tracks the last enemy skill name used, for HUD display in header
+var combatLastEnemySkill string
+
 // --------- Simple UI helpers (ASCII/emoji) for a Pokémon-like battle window ---------
 
 func hpBar(current, max, width int) string {
@@ -183,8 +188,17 @@ func printBattleHeader(player, enemy Personnage, isSuper bool) {
 	ebarColored := colorize(ebar, ansiColorForHP(enemy.PV, enemy.PVMax))
 	enemyContent := fmt.Sprintf(" Ennemi: %-28s  PV: [%-24s] %d/%d ", ename, ebarColored, enemy.PV, enemy.PVMax)
 	fmt.Printf("║ %-*s ║\n", innerWidth, enemyContent)
-	// Empty spacer row
-	fmt.Printf("║ %-*s ║\n", innerWidth, "")
+	// Spacer row (or enemy action HUD if available)
+	if combatLastEnemySkill != "" {
+		// Keep it short and unobtrusive under the enemy panel
+		line := "🧠 Action ennemie: " + combatLastEnemySkill
+		if len(line) > innerWidth {
+			line = line[:innerWidth]
+		}
+		fmt.Printf("║ %-*s ║\n", innerWidth, line)
+	} else {
+		fmt.Printf("║ %-*s ║\n", innerWidth, "")
+	}
 	// Player panel (bottom left style)
 	pbar := hpBar(player.PV, player.PVMax, 24)
 	pbarColored := colorize(pbar, ansiColorForHP(player.PV, player.PVMax))
@@ -299,11 +313,8 @@ func printCoinReward(coins int, jackpot bool) {
 func buildPlayerCharacter() Personnage {
 	// Part d'une copie du joueur persistant
 	p := currentPlayer
-	// Applique l'armure et l'arme sur la copie (pas sur l'état persistant)
-	_ = EquiperArmure(&p, p.ArmuresDisponibles)
-	if p.NiveauArme >= 0 && p.NiveauArme < len(p.ArmesDisponibles) {
-		_ = EquiperArme(&p, p.ArmesDisponibles[p.NiveauArme])
-	}
+	// Recalcule proprement les stats depuis la base et ré-applique l'équipement sauvegardé
+	RecomputeFromBaseAndEquip(&p)
 	// Préserve les PV persistants et les borne au nouveau PVMax
 	if currentPlayer.PV > 0 {
 		if currentPlayer.PV > p.PVMax {
@@ -312,7 +323,6 @@ func buildPlayerCharacter() Personnage {
 			p.PV = currentPlayer.PV
 		}
 	} else {
-		// Si PV persistants à 0, démarre à 0 (pas de heal auto)
 		if p.PV > p.PVMax {
 			p.PV = p.PVMax
 		}
@@ -344,20 +354,58 @@ func pickCompetence(p *Personnage) (Competence, bool) {
 //   - 70%: privilégie une compétence avec dégâts (>0) si disponible
 //   - 30%: choix totalement aléatoire (utilitaire/buff compris)
 func pickRandomCompetence(p *Personnage) (Competence, bool) {
-	comps := p.ArmeEquipee.Competences
-	if len(comps) == 0 {
-		return Competence{}, false
-	}
-	offensives := make([]Competence, 0, len(comps))
-	for _, c := range comps {
-		if c.Degats > 0 {
-			offensives = append(offensives, c)
+	// When forcing the synthesized kit, ignore weapon competences for enemies
+	if !combatForceSynthKit {
+		// Use weapon competences if available
+		comps := p.ArmeEquipee.Competences
+		if len(comps) > 0 {
+			offensives := make([]Competence, 0, len(comps))
+			for _, c := range comps {
+				if c.Degats > 0 {
+					offensives = append(offensives, c)
+				}
+			}
+			if len(offensives) > 0 && rand.Intn(100) < 70 {
+				return offensives[rand.Intn(len(offensives))], true
+			}
+			return comps[rand.Intn(len(comps))], true
 		}
+		// If no weapon competences, fall back to synthesized kit below
 	}
-	if len(offensives) > 0 && rand.Intn(100) < 70 {
-		return offensives[rand.Intn(len(offensives))], true
+
+	// Synthesized 4-skill kit for generic monsters (forced or fallback)
+	r := rand.Intn(100)
+	switch {
+	case r < 15:
+		// 15% Reinforcement: 50% damage reduction for 2 turns
+		return Competence{Nom: "Renforcement", Description: "Réduit les dégâts subis de 50% pendant 2 tours", Degats: 0, Type: "buff", TypeEffet: "Renforcement", Puissance: 1}, true
+	case r < 65:
+		// Next 50%: Main moderate attack scaled vs player later; use placeholder damage here
+		// Damage will be computed from enemyAttackBase in combat loop; just mark type
+		return Competence{Nom: "Frappe Mesurée", Description: "Attaque principale modérée", Degats: 0, Type: "physique"}, true
+	case r < 85:
+		// Next 20%: Strong attack
+		return Competence{Nom: "Assaut Puissant", Description: "Attaque puissante", Degats: 0, Type: "physique", Puissance: 2}, true
+	default:
+		// Last 15%: buff self or debuff player; randomly pick one
+		if rand.Intn(2) == 0 {
+			// Self buff
+			opts := []Competence{
+				{Nom: "Focalisation", Description: "+Précision pour l'ennemi", Degats: 0, Type: "buff", TypeEffet: "Focalisation", Puissance: 2},
+				{Nom: "Fortification", Description: "+Défense/ResMag pour l'ennemi", Degats: 0, Type: "buff", TypeEffet: "Fortification", Puissance: 2},
+				{Nom: "Imprégnation", Description: "+Dégâts pour l'ennemi", Degats: 0, Type: "buff", TypeEffet: "Imprégnation", Puissance: 2},
+			}
+			return opts[rand.Intn(len(opts))], true
+		}
+		// Debuff player: inverse of buffs (precision, defense, attack via damage reduction)
+		opts := []Competence{
+			{Nom: "Nébulation", Description: "-Précision du joueur", Degats: 0, Type: "magique", TypeEffet: "Nébulation", Puissance: 2},
+			{Nom: "Brise-Armure", Description: "-Défense du joueur", Degats: 0, Type: "physique", TypeEffet: "Brise-Armure", Puissance: 2},
+			{Nom: "Brise-Armure Magique", Description: "-Résistance magique du joueur", Degats: 0, Type: "magique", TypeEffet: "Brise-Armure Magique", Puissance: 2},
+			{Nom: "Affaiblissement", Description: "-Dégâts infligés par le joueur", Degats: 0, Type: "magique", TypeEffet: "Affaiblissement", Puissance: 2},
+		}
+		return opts[rand.Intn(len(opts))], true
 	}
-	return comps[rand.Intn(len(comps))], true
 }
 
 // applique un effet éventuel sur la cible en fonction de la compétence
@@ -397,27 +445,27 @@ func chooseCompetence(p *Personnage) (Competence, bool, bool) {
 	}
 	fmt.Println("  R) Retour")
 	fmt.Print("Votre choix (1-", len(comps), " ou R): ")
-	// Lire une seule touche depuis le canal global
 	if globalKeyEvents == nil {
 		// Fallback extrême si le canal n'est pas prêt
 		return comps[0], true, false
 	}
-	e := <-globalKeyEvents
-	if e.Key == keyboard.KeyEsc {
-		return Competence{}, false, true
-	}
-	r := e.Rune
-	if r == 'r' || r == 'R' {
-		return Competence{}, false, true
-	}
-	if r >= '1' && r <= '9' {
-		idx := int(r - '0')
-		if idx >= 1 && idx <= len(comps) {
-			return comps[idx-1], true, false
+	for {
+		e := <-globalKeyEvents
+		if e.Key == keyboard.KeyEsc {
+			return Competence{}, false, true
 		}
+		r := e.Rune
+		if r == 'r' || r == 'R' {
+			return Competence{}, false, true
+		}
+		if r >= '1' && r <= '9' {
+			idx := int(r - '0')
+			if idx >= 1 && idx <= len(comps) {
+				return comps[idx-1], true, false
+			}
+		}
+		fmt.Print("(touche non assignée) Choisissez 1-", len(comps), " ou R: ")
 	}
-	fmt.Println("Saisie invalide, compétence par défaut utilisée.")
-	return comps[0], true, false
 }
 
 // Sous-menu Objets (potion, Puff 9K, etc.) — n'utilise pas le tour
@@ -736,6 +784,9 @@ func objectMenu(player, enemy *Personnage) bool {
 }
 
 // Système de combat amélioré avec les modules existants
+// Optional override for enemy naming in scripted encounters
+var combatCustomEnemyName string
+
 func combat(currentMap string, isSuper bool) interface{} {
 	rand.Seed(time.Now().UnixNano())
 
@@ -744,7 +795,7 @@ func combat(currentMap string, isSuper bool) interface{} {
 	enemy := CreateRandomEnemyForMap(currentMap, isSuper)
 
 	// Boss final personnalisé pour salle15
-	if currentMap == "salle15" {
+	if currentMap == "salle15" && combatCustomEnemyName == "" {
 		// Définition explicite du boss final (ignorer le scaling générique ensuite)
 		custom := Personnage{
 			Nom:                "Mia Khalifa",
@@ -762,6 +813,13 @@ func combat(currentMap string, isSuper bool) interface{} {
 		custom.ArmeEquipee.DegatsPhysiques = 69
 		custom.ArmeEquipee.DegatsMagiques = 69
 		enemy = custom
+	}
+
+	// Apply a custom name if provided (used for salle15 mini-bosses and boss)
+	if combatCustomEnemyName != "" {
+		enemy.Nom = combatCustomEnemyName
+		// reset after use to avoid leaking to future fights
+		combatCustomEnemyName = ""
 	}
 
 	// Scaling supplémentaire pour salles boss progressives
@@ -795,6 +853,8 @@ func combat(currentMap string, isSuper bool) interface{} {
 		enemyAttackBase = 12
 	}
 
+	// Reset enemy HUD action at fight start
+	combatLastEnemySkill = ""
 	printBattleHeader(player, enemy, isSuper)
 
 	for player.PV > 0 && enemy.PV > 0 {
@@ -918,8 +978,9 @@ func combat(currentMap string, isSuper bool) interface{} {
 			return false
 
 		default:
-			fmt.Println("Action invalide !")
-			// on passe quand même au tour adverse, comme avant
+			// Touche non assignée: ne consomme pas le tour
+			fmt.Println("(touche non assignée) Actions valides: A, O, F")
+			continue
 		}
 
 		// Fin d'action joueur: traitements d'effets sur les deux
@@ -968,22 +1029,45 @@ func combat(currentMap string, isSuper bool) interface{} {
 		// Tour de l'ennemi — saute si étourdi
 		if EstEtourdi(&enemy) {
 			fmt.Println("😵‍💫 L'ennemi est étourdi et rate son tour !")
+			// No action this turn
+			combatLastEnemySkill = "(étourdi)"
 		} else {
 			// L'ennemi choisit une compétence au hasard (biais offensif)
 			ecomp, ok := pickRandomCompetence(&enemy)
 			edeg := enemyAttackBase
 			etype := "physique"
 			if ok {
-				if ecomp.Degats > 0 {
-					edeg = ecomp.Degats
+				// Scale damage based on competence category
+				switch ecomp.Nom {
+				case "Frappe Mesurée":
+					// Moderate attack: scale around player's gear; use baseline
+					edeg = int(float64(enemyAttackBase) * 1.0)
+				case "Assaut Puissant":
+					// Stronger attack: 1.5x baseline
+					edeg = int(float64(enemyAttackBase) * 1.5)
+				default:
+					if ecomp.Degats > 0 {
+						edeg = ecomp.Degats
+					}
 				}
 				if ecomp.Type != "" {
 					etype = ecomp.Type
 				}
 			}
+			// Record the chosen skill name for HUD
+			if ok {
+				name := ecomp.Nom
+				if name == "" {
+					name = "Attaque"
+				}
+				combatLastEnemySkill = name
+			} else {
+				combatLastEnemySkill = "Attaque"
+			}
 			edmg, touche, crit := resolveAttack(&enemy, &player, edeg, etype)
 			if !touche {
 				fmt.Println("🌀 L'ennemi rate son attaque !")
+				combatLastEnemySkill += " (raté)"
 			} else {
 				player.PV -= edmg
 				if player.PV < 0 {
@@ -995,14 +1079,21 @@ func combat(currentMap string, isSuper bool) interface{} {
 					fmt.Printf("💥 L'ennemi vous inflige %d dégâts.\n", edmg)
 				}
 				if ok {
-					// Buff/soin sur soi → appliqué à l'ennemi, sinon effet offensif sur le joueur
-					if ecomp.Degats <= 0 && ecomp.TypeEffet != "" && isSelfBuff(ecomp.TypeEffet) {
-						if eff := CreerEffet(ecomp.TypeEffet, ecomp.Puissance); eff != nil {
-							AppliquerEffet(&enemy, *eff)
-							fmt.Printf("✨ L'ennemi s'applique %s.\n", ecomp.Nom)
+					// Buff/debuff handling independent of damage
+					if ecomp.TypeEffet != "" {
+						if isSelfBuff(ecomp.TypeEffet) || ecomp.Nom == "Renforcement" {
+							if eff := CreerEffet(ecomp.TypeEffet, ecomp.Puissance); eff != nil {
+								// Special chance for Renforcement: 15%
+								AppliquerEffet(&enemy, *eff)
+								if ecomp.Nom == "Renforcement" {
+									fmt.Println("🛡️ L'ennemi se renforce et subira 50% de dégâts en moins pendant un moment !")
+								} else {
+									fmt.Printf("✨ L'ennemi s'applique %s.\n", ecomp.Nom)
+								}
+							}
+						} else {
+							maybeApplyEffect(&player, ecomp)
 						}
-					} else if ecomp.TypeEffet != "" {
-						maybeApplyEffect(&player, ecomp)
 					}
 				}
 			}
@@ -1184,7 +1275,9 @@ func combatWithAssignedType(currentMap string, isSuper bool, name string) interf
 			playerStats.attackBoost = 0
 			return false
 		default:
-			fmt.Println("Action invalide !")
+			// Touche non assignée: ne consomme pas le tour
+			fmt.Println("(touche non assignée) Actions valides: A, O, F")
+			continue
 		}
 
 		TraiterEffetsFinTour(&player)
@@ -1221,21 +1314,40 @@ func combatWithAssignedType(currentMap string, isSuper bool, name string) interf
 
 		if EstEtourdi(&enemy) {
 			fmt.Println("😵‍💫 L'ennemi est étourdi et rate son tour !")
+			combatLastEnemySkill = "(étourdi)"
 		} else {
 			ecomp, ok := pickRandomCompetence(&enemy)
 			edeg := enemyAttackBase
 			etype := "physique"
 			if ok {
-				if ecomp.Degats > 0 {
-					edeg = ecomp.Degats
+				// Scale damage based on competence like the main combat loop
+				switch ecomp.Nom {
+				case "Frappe Mesurée":
+					edeg = int(float64(enemyAttackBase) * 1.0)
+				case "Assaut Puissant":
+					edeg = int(float64(enemyAttackBase) * 1.5)
+				default:
+					if ecomp.Degats > 0 {
+						edeg = ecomp.Degats
+					}
 				}
 				if ecomp.Type != "" {
 					etype = ecomp.Type
 				}
 			}
+			if ok {
+				if ecomp.Nom != "" {
+					combatLastEnemySkill = ecomp.Nom
+				} else {
+					combatLastEnemySkill = "Attaque"
+				}
+			} else {
+				combatLastEnemySkill = "Attaque"
+			}
 			edmg, touche, crit := resolveAttack(&enemy, &player, edeg, etype)
 			if !touche {
 				fmt.Println("🌀 L'ennemi rate son attaque !")
+				combatLastEnemySkill += " (raté)"
 			} else {
 				player.PV -= edmg
 				if player.PV < 0 {

@@ -131,6 +131,8 @@ func cellToSymbol(val int) string {
 		return "⚙️"
 	case 72, 75, 78: // boss niveaux 2,3,4
 		return "👑"
+	case 79: // Chaudron / Sorcier alchimiste
+		return "⚗️"
 	case 11, 16, 17, 18, 19, 22, 23, 24, 25, 26, 29, 36, 37, 39, 41, 43, 45, 58, 59, 60, 61, 62, 63, 64, 65, 0:
 		return "•"
 	default:

@@ -35,6 +35,23 @@ type EffetActif struct {
 	ToursRestants int
 }
 
+// Détermine si un effet est un buff/debuff (inclut DOT/soins, contrôles, modifs de stats)
+func isBuffOrDebuff(e Effet) bool {
+	if e.DegatsParTour > 0 || e.SoinsParTour > 0 {
+		return true
+	}
+	if e.Estourdissement || e.Peur {
+		return true
+	}
+	if e.ModifPrecision != 0 || e.ModifCritique != 0 || e.ModifDegats != 0 || e.ModifDegatsMag != 0 || e.ModifArmure != 0 || e.ModifResistMag != 0 {
+		return true
+	}
+	if e.Nom == "Renforcement" {
+		return true
+	}
+	return false
+}
+
 // Applique un effet sur un personnage
 func AppliquerEffet(cible *Personnage, effet Effet) bool {
 	// RNG auto-seeded in Go 1.20+
@@ -44,11 +61,20 @@ func AppliquerEffet(cible *Personnage, effet Effet) bool {
 		return false
 	}
 
+	// Cap la durée des buffs/debuffs à 3 tours
+	if isBuffOrDebuff(effet) && effet.ToursRestants > 3 {
+		effet.ToursRestants = 3
+	}
+
 	// Vérifie si l'effet existe déjà et le met à jour ou l'ajoute
 	for i := range cible.EffetsActifs {
 		if cible.EffetsActifs[i].Effet.Nom == effet.Nom {
 			// Renouvelle la durée
-			cible.EffetsActifs[i].ToursRestants = effet.ToursRestants
+			nouv := effet.ToursRestants
+			if isBuffOrDebuff(effet) && nouv > 3 {
+				nouv = 3
+			}
+			cible.EffetsActifs[i].ToursRestants = nouv
 			fmt.Printf("%s : effet %s renouvelé (%d tours)\n", cible.Nom, effet.Nom, effet.ToursRestants)
 			return true
 		}
@@ -198,6 +224,36 @@ func AfficherEffets(personnage *Personnage) {
 // Créer un effet personnalisé basé sur un type d'effet
 func CreerEffet(typeEffet string, puissance int) *Effet {
 	switch typeEffet {
+	case "Renforcement":
+		return &Effet{
+			Nom:             "Renforcement",
+			ToursRestants:   2,
+			ChanceAppliquer: 1.0,
+			// La réduction de dégâts est appliquée au moment du calcul via un check dédié
+		}
+	case "Focalisation":
+		return &Effet{
+			Nom:             "Focalisation",
+			ToursRestants:   2,
+			ChanceAppliquer: 1.0,
+			ModifPrecision:  0.15 + float64(puissance)*0.05, // +20% à +40%
+		}
+	case "Fortification":
+		return &Effet{
+			Nom:             "Fortification",
+			ToursRestants:   2,
+			ChanceAppliquer: 1.0,
+			ModifArmure:     0.25 + float64(puissance)*0.1, // +35% à +65% armure
+			ModifResistMag:  0.20 + float64(puissance)*0.1, // +30% à +60% résistance magique
+		}
+	case "Imprégnation":
+		return &Effet{
+			Nom:             "Imprégnation",
+			ToursRestants:   2,
+			ChanceAppliquer: 1.0,
+			ModifDegats:     0.15 + float64(puissance)*0.08, // +23% à +55%
+			ModifDegatsMag:  0.10 + float64(puissance)*0.08, // +18% à +50%
+		}
 	case "Ivresse":
 		return &Effet{
 			Nom:             "Ivresse",
@@ -304,6 +360,15 @@ func CreerEffet(typeEffet string, puissance int) *Effet {
 			ToursRestants:   2 + puissance/2, // 2-4 tours
 			ChanceAppliquer: 1.0,
 			ModifDegatsMag:  0.15 + float64(puissance)*0.07, // +15% à +50%
+		}
+
+	case "Affaiblissement":
+		return &Effet{
+			Nom:             "Affaiblissement",
+			ToursRestants:   2 + puissance/2,                // 2-4 tours
+			ChanceAppliquer: 0.6 + float64(puissance)*0.08,  // 60%-100%
+			ModifDegats:     -0.15 - float64(puissance)*0.07, // -15% à -50% dégâts physiques
+			ModifDegatsMag:  -0.10 - float64(puissance)*0.07, // -10% à -45% dégâts magiques
 		}
 
 	case "Régénération":

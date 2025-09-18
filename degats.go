@@ -68,6 +68,8 @@ func EstCoupCritique(attaquant *Personnage) bool {
 
 func CalculerDegatsPhysiques(attaquant, defenseur *Personnage, degatsBase int) int {
 	modifDegatsPhys, _, _, _, _, _ := CalculerModificateurs(attaquant)
+	// Modificateurs défensifs (armure déjà traitée via formule, mais on capte éventuels debuffs/buffs)
+	_, _, _, _, modifArmureDef, _ := CalculerModificateurs(defenseur)
 
 	for _, effetActif := range attaquant.EffetsActifs {
 		if effetActif.Effet.Peur {
@@ -75,10 +77,17 @@ func CalculerDegatsPhysiques(attaquant, defenseur *Personnage, degatsBase int) i
 		}
 	}
 
-	armure := defenseur.Armure
+	armure := int(float64(defenseur.Armure) * modifArmureDef)
 	reduction := 1.0 - (float64(armure) / (100.0 + float64(armure)))
 
 	degats := float64(degatsBase) * modifDegatsPhys * reduction
+	// Réduction de 50% si Renforcement actif
+	for _, e := range defenseur.EffetsActifs {
+		if e.Effet.Nom == "Renforcement" {
+			degats *= 0.5
+			break
+		}
+	}
 	if degats < 1 {
 		degats = 1
 	}
@@ -87,11 +96,20 @@ func CalculerDegatsPhysiques(attaquant, defenseur *Personnage, degatsBase int) i
 
 func CalculerDegatsMagiques(attaquant, defenseur *Personnage, degatsBase int) int {
 	_, modifDegatsMag, _, _, _, _ := CalculerModificateurs(attaquant)
+	// Modificateurs défensifs magiques
+	_, _, _, _, _, modifResDef := CalculerModificateurs(defenseur)
 
-	resMag := defenseur.ResistMag
+	resMag := int(float64(defenseur.ResistMag) * modifResDef)
 	reduction := 1.0 - (float64(resMag) / (100.0 + float64(resMag)))
 
 	degats := float64(degatsBase) * modifDegatsMag * reduction
+	// Réduction de 50% si Renforcement actif
+	for _, e := range defenseur.EffetsActifs {
+		if e.Effet.Nom == "Renforcement" {
+			degats *= 0.5
+			break
+		}
+	}
 	if degats < 1 {
 		degats = 1
 	}

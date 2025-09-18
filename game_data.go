@@ -86,8 +86,7 @@ var transitions = map[string]map[int]struct {
 	},
 	"salle6": {
 		15: {nextMap: "salle3", spawnX: 12, spawnY: 1},
-		28: {nextMap: "salle3", spawnX: 12, spawnY: 1},
-		27: {nextMap: "salle7", spawnX: 2, spawnY: 3},
+		28: {nextMap: "salle7", spawnX: 12, spawnY: 1},
 	},
 	"salle7": {
 		27: {nextMap: "salle3", spawnX: 7, spawnY: 1},

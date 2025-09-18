@@ -5,7 +5,11 @@ import (
 	"github.com/rivo/tview"
 )
 
-func main() {
+// Menu-level handoff to trigger actions after app.Stop()
+var menuLoadSlot int
+
+// StartMainMenu runs the main title menu application.
+func StartMainMenu() {
 	app := tview.NewApplication()
 
 	// ASCII Art
@@ -50,10 +54,9 @@ func main() {
 				idx := i
 				if exists {
 					list.AddItem(line, "Entrer pour charger, 'Suppr' pour effacer", '0'+rune(i), func() {
-						// load
-						go func(slot int) {
-							_ = LoadFromSlot(app.Stop, slot)
-						}(idx)
+						// Schedule load after stopping UI, then stop app
+						menuLoadSlot = idx
+						app.Stop()
 					})
 				} else {
 					list.AddItem(line, "Commencer une nouvelle partie ici", '0'+rune(i), func() {
@@ -128,6 +131,17 @@ func main() {
 	if err := app.EnableMouse(true).SetRoot(pages, true).Run(); err != nil {
 		panic(err)
 	}
+	// After menu closes, perform deferred actions like loading a save
+	if menuLoadSlot > 0 {
+		slot := menuLoadSlot
+		menuLoadSlot = 0
+		// Load without passing appStop (already stopped), this will start the game loop
+		_ = LoadFromSlot(nil, slot)
+	}
+}
+
+func main() {
+	StartMainMenu()
 }
 
 // RunGameLoop gère la boucle principale du jeu

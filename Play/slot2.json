@@ -1,0 +1,310 @@
+{
+  "version": 1,
+  "slot": 2,
+  "when": "2025-09-18T20:48:23.8990666+02:00",
+  "player": {
+    "Nom": "Samourai",
+    "PV": 133,
+    "PVMax": 133,
+    "Armure": 27,
+    "ResistMag": 18,
+    "Precision": 1.8,
+    "TauxCritique": 0.55,
+    "MultiplicateurCrit": 2,
+    "EffetsActifs": null,
+    "ArmesDisponibles": [
+      {
+        "Nom": "Sabre Basique",
+        "DegatsPhysiques": 16,
+        "DegatsMagiques": 0,
+        "Precision": 0.9,
+        "TauxCritique": 0.25,
+        "Durabilite": 60,
+        "Competences": [
+          {
+            "Nom": "Frappe éclair",
+            "Description": "Attaque rapide.",
+            "Degats": 12,
+            "CoutMana": 0,
+            "Type": "physique",
+            "TypeEffet": "",
+            "Puissance": 0
+          }
+        ]
+      },
+      {
+        "Nom": "Katana",
+        "DegatsPhysiques": 22,
+        "DegatsMagiques": 0,
+        "Precision": 0.92,
+        "TauxCritique": 0.35,
+        "Durabilite": 80,
+        "Competences": [
+          {
+            "Nom": "Taillade",
+            "Description": "Une coupe rapide et précise.",
+            "Degats": 18,
+            "CoutMana": 0,
+            "Type": "physique",
+            "TypeEffet": "",
+            "Puissance": 0
+          },
+          {
+            "Nom": "Coupe Sanglante",
+            "Description": "Saignement léger.",
+            "Degats": 15,
+            "CoutMana": 2,
+            "Type": "physique",
+            "TypeEffet": "Saignement",
+            "Puissance": 1
+          }
+        ]
+      },
+      {
+        "Nom": "Katana Shuriken",
+        "DegatsPhysiques": 25,
+        "DegatsMagiques": 5,
+        "Precision": 0.91,
+        "TauxCritique": 0.4,
+        "Durabilite": 90,
+        "Competences": [
+          {
+            "Nom": "Frappe Tranchante",
+            "Description": "Frappe physique du Katana.",
+            "Degats": 20,
+            "CoutMana": 0,
+            "Type": "physique",
+            "TypeEffet": "",
+            "Puissance": 0
+          },
+          {
+            "Nom": "Shuriken Volant",
+            "Description": "Chance modérée d'étourdissement.",
+            "Degats": 10,
+            "CoutMana": 3,
+            "Type": "physique",
+            "TypeEffet": "Étourdissement",
+            "Puissance": 2
+          },
+          {
+            "Nom": "Lame Sanglante",
+            "Description": "Saignement modéré.",
+            "Degats": 18,
+            "CoutMana": 4,
+            "Type": "physique",
+            "TypeEffet": "Saignement",
+            "Puissance": 2
+          }
+        ]
+      },
+      {
+        "Nom": "Katana Lame Céleste",
+        "DegatsPhysiques": 35,
+        "DegatsMagiques": 10,
+        "Precision": 0.93,
+        "TauxCritique": 0.5,
+        "Durabilite": 120,
+        "Competences": [
+          {
+            "Nom": "Frappe Céleste",
+            "Description": "Augmente les dégâts.",
+            "Degats": 30,
+            "CoutMana": 0,
+            "Type": "physique",
+            "TypeEffet": "Augmentation de Dégâts",
+            "Puissance": 3
+          },
+          {
+            "Nom": "Shuriken Fantôme",
+            "Description": "Forte chance d'étourdissement.",
+            "Degats": 15,
+            "CoutMana": 5,
+            "Type": "physique",
+            "TypeEffet": "Étourdissement",
+            "Puissance": 4
+          },
+          {
+            "Nom": "Hémorragie Céleste",
+            "Description": "Saignement sévère.",
+            "Degats": 25,
+            "CoutMana": 6,
+            "Type": "physique",
+            "TypeEffet": "Saignement",
+            "Puissance": 4
+          }
+        ]
+      }
+    ],
+    "ArmuresDisponibles": [
+      {
+        "Nom": "Kimono de Combat",
+        "Defense": 10,
+        "Resistance": 5,
+        "HP": 8
+      },
+      {
+        "Nom": "Armure Légère de Samouraï",
+        "Defense": 16,
+        "Resistance": 8,
+        "HP": 15
+      },
+      {
+        "Nom": "Armure d’Élite Shogun",
+        "Defense": 22,
+        "Resistance": 12,
+        "HP": 25
+      },
+      {
+        "Nom": "Armure du Daimyo",
+        "Defense": 28,
+        "Resistance": 16,
+        "HP": 35
+      }
+    ],
+    "NiveauArme": 0,
+    "NiveauArmure": 0,
+    "Roches": 0,
+    "ArmeEquipee": {
+      "Nom": "Sabre Basique",
+      "DegatsPhysiques": 16,
+      "DegatsMagiques": 0,
+      "Precision": 0.9,
+      "TauxCritique": 0.25,
+      "Durabilite": 60,
+      "Competences": [
+        {
+          "Nom": "Frappe éclair",
+          "Description": "Attaque rapide.",
+          "Degats": 12,
+          "CoutMana": 0,
+          "Type": "physique",
+          "TypeEffet": "",
+          "Puissance": 0
+        }
+      ]
+    },
+    "ArmureEquipee": {
+      "Nom": "Kimono de Combat",
+      "Defense": 10,
+      "Resistance": 5,
+      "HP": 8
+    },
+    "ArtefactsEquipes": [
+      null,
+      null
+    ],
+    "ArtefactsPossedes": null
+  },
+  "playerInventory": {
+    "antidote": 0,
+    "bombe_givrante": 0,
+    "bombe_incendiaire": 0,
+    "clés": 0,
+    "clés_spéciales": 0,
+    "elixir_critique": 0,
+    "elixir_force": 0,
+    "elixir_vitesse": 0,
+    "grenade_fumigene": 0,
+    "hache": 0,
+    "parchemin_dispersion": 0,
+    "pièces": 0,
+    "potion_degats": 0,
+    "potion_majeure": 0,
+    "potion_mineure": 0,
+    "potion_supreme": 0,
+    "potions": 0,
+    "puff_9k": 0,
+    "sida": 0,
+    "vodka_vitaly": 0,
+    "épées": 0
+  },
+  "currentMap": "salle1",
+  "playerX": 8,
+  "playerY": 5,
+  "enemiesDefeated": {
+    "salle1": {},
+    "salle10": {},
+    "salle11": {},
+    "salle12": {},
+    "salle13": {},
+    "salle14": {},
+    "salle15": {},
+    "salle2": {},
+    "salle3": {},
+    "salle4": {},
+    "salle5": {},
+    "salle6": {},
+    "salle7": {},
+    "salle8": {},
+    "salle9": {}
+  },
+  "pnjTransformed": {
+    "salle1": {},
+    "salle10": {},
+    "salle11": {},
+    "salle12": {},
+    "salle13": {},
+    "salle14": {},
+    "salle15": {},
+    "salle2": {},
+    "salle3": {},
+    "salle4": {},
+    "salle5": {},
+    "salle6": {},
+    "salle7": {},
+    "salle8": {},
+    "salle9": {}
+  },
+  "rewardsGiven": {
+    "salle1": {},
+    "salle10": {},
+    "salle11": {},
+    "salle12": {},
+    "salle13": {},
+    "salle14": {},
+    "salle15": {},
+    "salle2": {},
+    "salle3": {},
+    "salle4": {},
+    "salle5": {},
+    "salle6": {},
+    "salle7": {},
+    "salle8": {},
+    "salle9": {}
+  },
+  "chestOpened": {},
+  "secretChests": {},
+  "stoneBroken": false,
+  "cutTrees": {},
+  "mapTrees": {},
+  "salle12": {
+    "DefeatedMini": {},
+    "Fragments": 0,
+    "SpawnerSpawn": false,
+    "BossDefeated": false
+  },
+  "bossRooms": {
+    "salle13": {
+      "DefeatedMini": {},
+      "Fragments": 0,
+      "SpawnerSpawn": false,
+      "BossDefeated": false
+    },
+    "salle14": {
+      "DefeatedMini": {},
+      "Fragments": 0,
+      "SpawnerSpawn": false,
+      "BossDefeated": false
+    },
+    "salle15": {
+      "DefeatedMini": {},
+      "Fragments": 0,
+      "SpawnerSpawn": false,
+      "BossDefeated": false
+    }
+  },
+  "randomMobsSalle10": null,
+  "superEnemyFlags": {
+    "salle10": {}
+  }
+}
