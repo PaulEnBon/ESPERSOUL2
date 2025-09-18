@@ -42,4 +42,7 @@ go build .
 ```bash
 Go run .
 
+4. **Autre Option**
+
+Lancer ESPERSOUL2.exe
 ---
