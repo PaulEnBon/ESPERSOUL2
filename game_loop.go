@@ -722,7 +722,7 @@ func openSecretChest(x, y int) {
 // Gère l'entrée utilisateur pour le déplacement et actions.
 // Retourne les nouvelles coordonnées (ou les mêmes si pas de déplacement) et un bool indiquant si la boucle doit continuer.
 func getPlayerMovement(events <-chan keyboard.KeyEvent, px, py int) (int, int, bool) {
-	fmt.Print("Déplacez-vous (ZQSD pour bouger, I=Inventaire, X=Quitter): ")
+	fmt.Print("Déplacez-vous (ZQSD pour bouger, I=Inventaire, X=Quitter, *=Sauver): ")
 
 	// Afficher les messages HUD accumulés juste sous la ligne de déplacement
 	if len(hudMessages) > 0 {
@@ -778,6 +778,19 @@ func getPlayerMovement(events <-chan keyboard.KeyEvent, px, py int) (int, int, b
 	case input == "x":
 		fmt.Println("Vous quittez la partie. Merci d'avoir joué !")
 		return px, py, false
+	case input == "*":
+		// Quick save: use lastUsedSaveSlot or first empty
+		slot := lastUsedSaveSlot
+		if slot < 1 || slot > 4 {
+			slot = firstEmptySlot()
+			if slot == -1 {
+				slot = 1 // fallback: overwrite slot 1 if all occupied
+			}
+		}
+		if err := SaveToSlot(slot); err != nil {
+			addHUDMessage("❌ Échec de la sauvegarde")
+		}
+		return px, py, true
 	default:
 		// touche ignorée
 		return px, py, true
@@ -865,7 +878,13 @@ func RunGameLoop(currentMap string) {
 
 	// Assure que le joueur est présent dans la carte initiale
 	if px, py := findPlayer(mapData); px == -1 || py == -1 {
-		placePlayerAt(mapData, len(mapData[0])/2, len(mapData)/2)
+		// If loading from a save with pending spawn, use it
+		if pendingSpawn.Active {
+			placePlayerAt(mapData, pendingSpawn.X, pendingSpawn.Y)
+			pendingSpawn.Active = false
+		} else {
+			placePlayerAt(mapData, len(mapData[0])/2, len(mapData)/2)
+		}
 	}
 
 	// Met à jour les références globales utilisées par getPlayerMovement pour le cheat menu
@@ -952,7 +971,13 @@ func RunGameLoop(currentMap string) {
 			} else if haveSpawn {
 				placePlayerAt(mapData, spawnX, spawnY)
 			} else {
-				placePlayerAt(mapData, len(mapData[0])/2, len(mapData)/2)
+				// If we just loaded a save and no specific spawn from transition, use pending spawn once
+				if pendingSpawn.Active {
+					placePlayerAt(mapData, pendingSpawn.X, pendingSpawn.Y)
+					pendingSpawn.Active = false
+				} else {
+					placePlayerAt(mapData, len(mapData[0])/2, len(mapData)/2)
+				}
 			}
 			currentMapGlobalRef = currentMap
 			mapDataGlobalRef = mapData
