@@ -816,6 +816,9 @@ func RunGameLoop(currentMap string) {
 	// Puis retirer les arbres déjà coupés (persistance)
 	applyCutTrees(currentMap, mapData)
 
+	// Définir le nom d'affichage de la salle courante
+	currentMapDisplayName = displayNameFor(currentMap)
+
 	// Auto-équipe la Lunette d'Erwann si la classe est Erwann
 	if currentPlayer.Nom == "Erwann" {
 		if !PossedeArtefact(&currentPlayer, "Lunette d'Erwann") {
@@ -875,7 +878,7 @@ func RunGameLoop(currentMap string) {
 	for {
 		assignEnemyEmojis(currentMap, mapData)
 		printMap(mapData) // Le HUD est maintenant intégré dans printMap
-		fmt.Printf("📍 Salle actuelle: %s\n", currentMap)
+		fmt.Printf("📍 Salle actuelle: %s\n", displayNameFor(currentMap))
 
 		px, py := findPlayer(mapData)
 		if px == -1 || py == -1 {
@@ -932,7 +935,7 @@ func RunGameLoop(currentMap string) {
 			// Ré-appliquer les décorations pour la nouvelle carte puis retirer les arbres coupés
 			applyDecorations(currentMap, mapData)
 			applyCutTrees(currentMap, mapData)
-			currentMapDisplayName = currentMap
+			currentMapDisplayName = displayNameFor(currentMap)
 			assignEnemyEmojis(currentMap, mapData)
 			applyEnemyStates(mapData, currentMap)
 			currentMapGlobalRef = currentMap
@@ -967,7 +970,7 @@ func playExplosion(mapData [][]int, x, y int) {
 	for i, f := range frames {
 		mapData[y][x] = f
 		printMap(mapData)
-		fmt.Printf("📍 Salle actuelle: %s\n", "salle1")
+		fmt.Printf("📍 Salle actuelle: %s\n", displayNameFor("salle1"))
 		if i == 0 {
 			time.Sleep(120 * time.Millisecond)
 		} else {
