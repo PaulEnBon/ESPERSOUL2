@@ -345,3 +345,34 @@ var Vitaly = Personnage{
 	ArmesDisponibles:   ArmesVitaly,
 	ArmuresDisponibles: ArmuresVitaly,
 }
+
+// AllClasses retourne la liste des classes/joueurs pré-définis.
+func AllClasses() []Personnage {
+	return []Personnage{
+		Steeve,
+		CRS,
+		Pyromane,
+		RobinDesBois,
+		Boucher,
+		CroMagnon,
+		Zeus,
+		Samourai,
+		Gandalf,
+		Singe,
+		Bambi,
+		Poseidon,
+		Erwann,
+		Gabriel,
+		Vitaly,
+	}
+}
+
+// AllClassNames retourne uniquement les noms des classes disponibles.
+func AllClassNames() []string {
+	classes := AllClasses()
+	names := make([]string, 0, len(classes))
+	for _, c := range classes {
+		names = append(names, c.Nom)
+	}
+	return names
+}
