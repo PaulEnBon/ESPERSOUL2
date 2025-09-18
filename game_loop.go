@@ -11,6 +11,161 @@ import (
 	"github.com/eiannone/keyboard"
 )
 
+// ===================== CHAUDRON : Craft d'artefacts via loots ennemis =====================
+// Chaque recette consomme des objets de l'inventaire (drops spécifiques) pour créer un artefact permanent.
+// Les artefacts ne sont ajoutés qu'une seule fois (si déjà possédé, la recette peut être ignorée ou redonnée comme confirmation simple).
+type cauldronRecipe struct {
+	inputs       map[string]int // item -> quantité nécessaire
+	artefactName string         // Nom EXACT de l'artefact dans ArtefactsDisponibles
+	description  string         // Texte affiché dans le menu
+}
+
+var cauldronRecipes = []cauldronRecipe{
+	// Défense / bas-moyen (peu de composants, pas ou peu de rares)
+	{inputs: map[string]int{"insigne_chevalier": 3, "gelée_visqueuse": 2}, artefactName: "Gant Anti-Émeute", description: "+Armure +Précision faible"},
+	{inputs: map[string]int{"insigne_chevalier": 4, "gelée_visqueuse": 3}, artefactName: "Rune de Trempe", description: "+Armure +RésistMag"},
+	{inputs: map[string]int{"insigne_chevalier": 5, "essence_sombre": 2}, artefactName: "Glyphe de Parade", description: "+Armure%"},
+	{inputs: map[string]int{"gelée_visqueuse": 5, "coeur_de_gelée": 1}, artefactName: "Coquille Abyssale", description: "+RésistMag"},
+	{inputs: map[string]int{"gelée_visqueuse": 4, "dent_rat": 4}, artefactName: "Relique de la Sylve", description: "+Armure +Précision"},
+
+	// Physique / early (utilise dents, sang, insignes)
+	{inputs: map[string]int{"dent_rat": 6, "capuche_brigand": 2}, artefactName: "Insigne du Sergent", description: "+Dégâts +Précision"},
+	{inputs: map[string]int{"dent_rat": 8, "sang_berserker": 3}, artefactName: "Dent de Mammouth", description: "+Dégâts physiques"},
+	{inputs: map[string]int{"sang_berserker": 6, "insigne_chevalier": 4, "dent_rat_luisante": 1}, artefactName: "Coutelas Runique", description: "+Dégâts +Crit"},
+	{inputs: map[string]int{"sang_berserker": 5, "plume_fleche": 5, "dague_ensorcelée": 1}, artefactName: "Boussole de Chasseur", description: "+Précision +Dégâts"},
+	{inputs: map[string]int{"sang_berserker": 6, "capuche_brigand": 4, "talisman_fureur": 1}, artefactName: "Médaillon du Chasseur de Mages", description: "+Physique +RésistMag"},
+
+	// Crit / précision (archer, brigand, champion)
+	{inputs: map[string]int{"plume_fleche": 6, "capuche_brigand": 4}, artefactName: "Carquois des Mille Flèches", description: "+Précision +Crit"},
+	{inputs: map[string]int{"capuche_brigand": 6, "plume_fleche": 4, "carquois_gravé": 1}, artefactName: "Puce de Visée", description: "+Précision +Crit"},
+	{inputs: map[string]int{"plume_fleche": 6, "embleme_champion": 4, "aiguille_du_destin": 1}, artefactName: "Bandeau du Ronin", description: "+Précision +Crit"},
+	{inputs: map[string]int{"embleme_champion": 6, "plume_fleche": 4, "aiguille_du_destin": 2}, artefactName: "Œil de Lynx", description: "+Précision +Crit"},
+	{inputs: map[string]int{"embleme_champion": 5, "capuche_brigand": 5, "aiguille_du_destin": 2}, artefactName: "Peau de Banane Sacrée", description: "+Précision"},
+
+	// Magie (pyro, mage sombre, archimage)
+	{inputs: map[string]int{"cendre_infernale": 6, "essence_sombre": 3}, artefactName: "Pierre d'Ignition", description: "+Magie +Crit"},
+	{inputs: map[string]int{"cendre_infernale": 6, "braise_eternelle": 1, "parchemin_arcane": 4}, artefactName: "Talisman du Brasier", description: "+Magie +Physique"},
+	{inputs: map[string]int{"essence_sombre": 6, "noyau_occulte": 1, "parchemin_arcane": 4}, artefactName: "Perle d'Æther", description: "+Magie +Précision"},
+	{inputs: map[string]int{"parchemin_arcane": 7, "sceau_archimage": 2, "essence_sombre": 5}, artefactName: "Médaillon de Foudre Pure", description: "+Magie"},
+	{inputs: map[string]int{"essence_sombre": 8, "noyau_occulte": 2, "fragment_demoniaque": 1}, artefactName: "Éclat de Foudre Gelée", description: "+Magie +Précision"},
+
+	// Crit & Magie haute (démon / mix)
+	{inputs: map[string]int{"corne_demon": 8, "fragment_demoniaque": 2, "noyau_occulte": 1}, artefactName: "Anneau des Tempêtes", description: "+Magie +Crit fort"},
+
+	// Hybrides utilitaires supplémentaires
+	{inputs: map[string]int{"insigne_chevalier": 4, "corne_demon": 3, "fragment_demoniaque": 1}, artefactName: "Anneau des Tempêtes", description: "(Variante)"},
+	// (Note: L'Anneau des Tempêtes a 2 recettes possibles – le joueur peut en utiliser une)
+
+	// Défense + résistance (mix chevalier + gelée + sombre)
+	{inputs: map[string]int{"insigne_chevalier": 6, "gelée_visqueuse": 4, "essence_sombre": 2}, artefactName: "Conque des Profondeurs", description: "+RésistMag +Précision"},
+
+	// Artefacts de dissipation (faible coût + 1 rare ciblée pour signifier spécialisation)
+	{inputs: map[string]int{"gelée_visqueuse": 4, "dent_rat": 2}, artefactName: "Antidote Éternel", description: "Anti-Poison"},
+	{inputs: map[string]int{"cendre_infernale": 4, "gelée_visqueuse": 2}, artefactName: "Talisman Éteigneflamme", description: "Anti-Brûlure"},
+	{inputs: map[string]int{"sang_berserker": 4, "dent_rat": 2}, artefactName: "Sceau Hémostatique", description: "Anti-Saignement"},
+	{inputs: map[string]int{"essence_sombre": 4, "capuche_brigand": 2}, artefactName: "Pendentif de Courage", description: "Anti-Peur"},
+	{inputs: map[string]int{"plume_fleche": 4, "parchemin_arcane": 2}, artefactName: "Talisman de Vigilance", description: "Anti-Étourdissement"},
+	{inputs: map[string]int{"parchemin_arcane": 4, "capuche_brigand": 2}, artefactName: "Sceau de Focalisation", description: "Anti Nébulation/Défavorisation"},
+	{inputs: map[string]int{"insigne_chevalier": 4, "essence_sombre": 2}, artefactName: "Glyphe de Bastion", description: "Anti Brise-Armure"},
+	{inputs: map[string]int{"sang_berserker": 3, "cendre_infernale": 3}, artefactName: "Cachet de Détermination", description: "Anti débuffs attaque"},
+
+	// Restants / précision pure
+	{inputs: map[string]int{"plume_fleche": 5, "capuche_brigand": 3}, artefactName: "Puce de Visée", description: "+Précision +Crit"},
+}
+
+// Vérifie si les ressources nécessaires sont présentes
+func cauldronHasInputs(req map[string]int) bool {
+	for k, v := range req {
+		if playerInventory[k] < v {
+			return false
+		}
+	}
+	return true
+}
+
+// Consomme les ressources
+func cauldronConsume(req map[string]int) {
+	for k, v := range req {
+		playerInventory[k] -= v
+	}
+}
+
+// Récupère un artefact par nom exact
+func cauldronGetArtefact(name string) (Artefact, bool) { return GetArtefactParNom(name) }
+
+func formatRecipeInputs(req map[string]int) string {
+	parts := make([]string, 0, len(req))
+	for k, v := range req {
+		parts = append(parts, fmt.Sprintf("%d×%s", v, k))
+	}
+	return strings.Join(parts, ", ")
+}
+
+// Menu principal du chaudron; bloquant jusqu'à sortie
+func openCauldron() {
+	fmt.Println("\n🧪 === CHAUDRON ALCHEMIQUE ===")
+	fmt.Println("Mélangez des composants de monstres pour forger des artefacts uniques.")
+	fmt.Println("Tapez le numéro pour fabriquer, 'q' pour quitter.")
+	for {
+		for i, r := range cauldronRecipes {
+			status := "❌"
+			if cauldronHasInputs(r.inputs) {
+				status = "✅"
+			}
+			// Vérifier possession
+			owned := PossedeArtefact(&currentPlayer, r.artefactName)
+			if owned {
+				status = "✔️ (déjà)"
+			}
+			fmt.Printf("%d) %s -> %s  [%s]\n", i+1, formatRecipeInputs(r.inputs), r.artefactName, status)
+		}
+		fmt.Print("> ")
+		var in string
+		fmt.Scanln(&in)
+		in = strings.TrimSpace(strings.ToLower(in))
+		if in == "q" {
+			break
+		}
+		idx := -1
+		fmt.Sscanf(in, "%d", &idx)
+		if idx < 1 || idx > len(cauldronRecipes) {
+			fmt.Println("Choix invalide.")
+			continue
+		}
+		rec := cauldronRecipes[idx-1]
+		if PossedeArtefact(&currentPlayer, rec.artefactName) {
+			fmt.Println("Vous possédez déjà cet artefact.")
+			continue
+		}
+		if !cauldronHasInputs(rec.inputs) {
+			fmt.Println("Ingrédients insuffisants.")
+			continue
+		}
+		art, ok := cauldronGetArtefact(rec.artefactName)
+		if !ok {
+			fmt.Println("Artefact introuvable (config)")
+			continue
+		}
+		cauldronConsume(rec.inputs)
+		AjouterArtefactPossede(&currentPlayer, art)
+		// Essaie de l'équiper si un slot vide existe
+		equipped := false
+		for slot := 0; slot < MaxArtefactsEquipes; slot++ {
+			if slot >= len(currentPlayer.ArtefactsEquipes) || currentPlayer.ArtefactsEquipes[slot] == nil {
+				EquiperArtefactDansSlot(&currentPlayer, art, slot)
+				equipped = true
+				break
+			}
+		}
+		if equipped {
+			fmt.Printf("✨ Artefact forgé et équipé: %s !\n", art.Nom)
+		} else {
+			fmt.Printf("✨ Artefact forgé: %s (ajouté à la collection).\n", art.Nom)
+		}
+	}
+	fmt.Println("Fermeture du chaudron.")
+}
+
 // Séquence cheat: UP UP DOWN DOWN A B A B
 var cheatSequence = []string{"up", "up", "down", "down", "a", "b", "a", "b"}
 var cheatProgress int
@@ -522,6 +677,11 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 				}
 			}
 		}
+		return false, currentMap
+
+	case 79: // Chaudron alchimique (craft artefacts)
+		fmt.Println("Vous découvrez un chaudron bouillonnant...")
+		openCauldron()
 		return false, currentMap
 
 	case 3: // PNJ

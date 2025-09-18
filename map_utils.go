@@ -204,13 +204,13 @@ func randomEnemyEmojiForMap(mapName string) string {
 	case "Berserker":
 		return "⚔️"
 	case "Mage Sombre":
-		return "🪄"
+		return "🧙"
 	case "Seigneur Démon":
 		return "👿"
 	case "Archimage":
 		return "📜"
 	case "Champion déchu":
-		return "🥷"
+		return "🏆"
 	default:
 		return "👹"
 	}
@@ -404,6 +404,7 @@ func printMap(mapData [][]int) {
 		}
 	}
 
+	// Largeur de cellule fixe (comportement stable antérieur)
 	cellWidth := 2
 	if useASCII {
 		cellWidth = 1
@@ -422,9 +423,9 @@ func printMap(mapData [][]int) {
 		}
 	}
 
-	// Largeur fixe de la partie carte pour aligner les séparateurs
-	// (Empêche le décalage vertical des lignes blanches dû à la variation de largeur des emojis.)
-	mapLineWidth := len(mapData[0]) * (cellWidth + 1) // chaque case = 1 espace + symbole (et pad)
+	// Largeur fixe de la carte (1 espace + symbole/padding)
+	logicalCellWidth := cellWidth
+	mapLineWidth := len(mapData[0]) * (cellWidth + 1)
 	for i := 0; i < maxLines; i++ {
 		var mapLine string
 		if i < mapHeight {
@@ -432,7 +433,14 @@ func printMap(mapData [][]int) {
 			for xIdx, val := range mapData[i] {
 				sym := cellToSymbolAt(xIdx, i, val)
 				w := runewidth.StringWidth(sym)
-				pad := cellWidth - w
+				if w > logicalCellWidth { // tronque à un rune si trop large
+					runes := []rune(sym)
+					if len(runes) > 0 {
+						sym = string(runes[0])
+						w = runewidth.StringWidth(sym)
+					}
+				}
+				pad := logicalCellWidth - w
 				if pad < 0 {
 					pad = 0
 				}

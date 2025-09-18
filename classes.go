@@ -40,14 +40,14 @@ const MaxArtefactsEquipes = 2
 
 var Steeve = Personnage{
 	Nom:                "Steeve",
-	PV:                 130,
-	PVMax:              130,
-	Armure:             24,
-	ResistMag:          10,
+	PV:                 95, // réduit (130 -> 95)
+	PVMax:              95,
+	Armure:             16, // réduit (24 -> 16)
+	ResistMag:          7,  // réduit (10 -> 7)
 	Precision:          0.85,
 	TauxCritique:       0.10,
 	MultiplicateurCrit: 1.6,
-	ArmesDisponibles:   ArmesSoldat, // 👈 ici tu dois avoir toutes les armes
+	ArmesDisponibles:   ArmesSoldat,
 	ArmuresDisponibles: ArmuresSoldat,
 	NiveauArme:         0,
 	NiveauArmure:       0,
@@ -58,10 +58,10 @@ var Steeve = Personnage{
 // ==========================
 var CRS = Personnage{
 	Nom:                "CRS",
-	PV:                 170,
-	PVMax:              170,
-	Armure:             30,
-	ResistMag:          15,
+	PV:                 120, // 170 -> 120
+	PVMax:              120,
+	Armure:             22, // 30 -> 22
+	ResistMag:          11, // 15 -> 11
 	Precision:          0.80,
 	TauxCritique:       0.05,
 	MultiplicateurCrit: 1.4,
@@ -80,10 +80,10 @@ var CRS = Personnage{
 // ==========================
 var Pyromane = Personnage{
 	Nom:                "Pyromane",
-	PV:                 110,
-	PVMax:              110,
-	Armure:             8,
-	ResistMag:          16,
+	PV:                 80, // 110 -> 80
+	PVMax:              80,
+	Armure:             5,  // 8 -> 5
+	ResistMag:          12, // 16 -> 12
 	Precision:          0.80,
 	TauxCritique:       0.10,
 	MultiplicateurCrit: 1.7,
@@ -102,10 +102,10 @@ var Pyromane = Personnage{
 // ==========================
 var RobinDesBois = Personnage{
 	Nom:                "Robin des Bois",
-	PV:                 115,
-	PVMax:              115,
-	Armure:             12,
-	ResistMag:          9,
+	PV:                 85, // 115 -> 85
+	PVMax:              85,
+	Armure:             9, // 12 -> 9
+	ResistMag:          6, // 9 -> 6
 	Precision:          0.90,
 	TauxCritique:       0.20,
 	MultiplicateurCrit: 1.9,
@@ -124,10 +124,10 @@ var RobinDesBois = Personnage{
 // ==========================
 var Boucher = Personnage{
 	Nom:                "Boucher",
-	PV:                 145,
-	PVMax:              145,
-	Armure:             20,
-	ResistMag:          8,
+	PV:                 105, // 145 -> 105
+	PVMax:              105,
+	Armure:             14, // 20 -> 14
+	ResistMag:          6,  // 8 -> 6
 	Precision:          0.85,
 	TauxCritique:       0.20,
 	MultiplicateurCrit: 1.85,
@@ -146,10 +146,10 @@ var Boucher = Personnage{
 // ==========================
 var CroMagnon = Personnage{
 	Nom:                "Cro-Magnon",
-	PV:                 160,
-	PVMax:              160,
-	Armure:             17,
-	ResistMag:          9,
+	PV:                 115, // 160 -> 115
+	PVMax:              115,
+	Armure:             13, // 17 -> 13
+	ResistMag:          7,  // 9 -> 7
 	Precision:          0.85,
 	TauxCritique:       0.25,
 	MultiplicateurCrit: 1.7,
@@ -168,10 +168,10 @@ var CroMagnon = Personnage{
 // ==========================
 var Zeus = Personnage{
 	Nom:                "Zeus",
-	PV:                 125,
-	PVMax:              125,
-	Armure:             10,
-	ResistMag:          36,
+	PV:                 90, // 125 -> 90
+	PVMax:              90,
+	Armure:             7,  // 10 -> 7
+	ResistMag:          26, // 36 -> 26
 	Precision:          0.90,
 	TauxCritique:       0.35,
 	MultiplicateurCrit: 1.8,
@@ -191,10 +191,10 @@ var Zeus = Personnage{
 // ==========================
 var Samourai = Personnage{
 	Nom:                "Samourai",
-	PV:                 125,
-	PVMax:              125,
-	Armure:             17,
-	ResistMag:          13,
+	PV:                 90, // 125 -> 90
+	PVMax:              90,
+	Armure:             12, // 17 -> 12
+	ResistMag:          9,  // 13 -> 9
 	Precision:          0.90,
 	TauxCritique:       0.30,
 	MultiplicateurCrit: 2.0,
@@ -213,10 +213,10 @@ var Samourai = Personnage{
 // ==========================
 var Gandalf = Personnage{
 	Nom:                "Gandalf",
-	PV:                 115,
-	PVMax:              115,
-	Armure:             10,
-	ResistMag:          32,
+	PV:                 85, // 115 -> 85
+	PVMax:              85,
+	Armure:             7,  // 10 -> 7
+	ResistMag:          23, // 32 -> 23
 	Precision:          0.88,
 	TauxCritique:       0.20,
 	MultiplicateurCrit: 1.7,
@@ -235,10 +235,10 @@ var Gandalf = Personnage{
 // ==========================
 var Singe = Personnage{
 	Nom:                "Singe",
-	PV:                 110,
-	PVMax:              110,
-	Armure:             11,
-	ResistMag:          13,
+	PV:                 80, // 110 -> 80
+	PVMax:              80,
+	Armure:             8, // 11 -> 8
+	ResistMag:          9, // 13 -> 9
 	Precision:          0.95,
 	TauxCritique:       0.20,
 	MultiplicateurCrit: 1.75,
@@ -258,10 +258,10 @@ var Singe = Personnage{
 // ==========================
 var Bambi = Personnage{
 	Nom:                "Bambi",
-	PV:                 125,
-	PVMax:              125,
-	Armure:             17,
-	ResistMag:          13,
+	PV:                 90, // 125 -> 90
+	PVMax:              90,
+	Armure:             12, // 17 -> 12
+	ResistMag:          9,  // 13 -> 9
 	Precision:          0.90,
 	TauxCritique:       0.20,
 	MultiplicateurCrit: 1.55,
@@ -281,10 +281,10 @@ var Bambi = Personnage{
 // ==========================
 var Poseidon = Personnage{
 	Nom:                "Poséidon",
-	PV:                 150,
-	PVMax:              150,
-	Armure:             28,
-	ResistMag:          22,
+	PV:                 110, // 150 -> 110
+	PVMax:              110,
+	Armure:             20, // 28 -> 20
+	ResistMag:          16, // 22 -> 16
 	Precision:          0.90,
 	TauxCritique:       0.25,
 	MultiplicateurCrit: 1.75,

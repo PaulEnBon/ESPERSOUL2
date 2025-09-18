@@ -707,6 +707,9 @@ func combat(currentMap string, isSuper bool) interface{} {
 			// Incrémente le compteur d'ennemis tués (stat héritée)
 			playerStats.enemiesKilled++
 
+			// Loot spécifique ennemi
+			awardEnemyLoot(enemy.Nom, isSuper)
+
 			coins, jackpot, _ := computeCoinLoot()
 			addToInventory("pièces", coins)
 			printCoinReward(coins, jackpot)
@@ -965,6 +968,9 @@ func combatWithAssignedType(currentMap string, isSuper bool, name string) interf
 		if enemy.PV <= 0 {
 			fmt.Println("\n🎉 VICTOIRE ! Vous avez vaincu la créature !")
 			playerStats.enemiesKilled++
+			awardEnemyLoot(enemy.Nom, isSuper)
+			awardEnemyLoot(enemy.Nom, isSuper)
+			awardEnemyLoot(enemy.Nom, isSuper)
 			coins, jackpot, _ := computeCoinLoot()
 			addToInventory("pièces", coins)
 			printCoinReward(coins, jackpot)
