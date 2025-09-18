@@ -34,29 +34,6 @@ var playerInventory = map[string]int{
 	"antidote":             0,
 	"sida":                 0, // Objet spécial drop boss final
 	"vodka_vitaly":         0, // Potion qui régénère toute la vie
-	// Loots spécifiques ennemis (communs / rares)
-	"dent_rat":            0,
-	"dent_rat_luisante":   0,
-	"gelée_visqueuse":     0,
-	"coeur_de_gelée":      0,
-	"capuche_brigand":     0,
-	"dague_ensorcelée":    0,
-	"plume_fleche":        0,
-	"carquois_gravé":      0,
-	"cendre_infernale":    0,
-	"braise_eternelle":    0,
-	"insigne_chevalier":   0,
-	"lame_ancient":        0,
-	"sang_berserker":      0,
-	"talisman_fureur":     0,
-	"essence_sombre":      0,
-	"noyau_occulte":       0,
-	"corne_demon":         0,
-	"fragment_demoniaque": 0,
-	"parchemin_arcane":    0,
-	"sceau_archimage":     0,
-	"embleme_champion":    0,
-	"aiguille_du_destin":  0,
 }
 
 // Stats du joueur pour les bonus
@@ -93,38 +70,6 @@ func showInventory() {
 	fmt.Printf("💊 Puff 9K: %d\n", playerInventory["puff_9k"])
 	fmt.Printf("🪓 Hache: %d\n", playerInventory["hache"])
 	fmt.Printf("🍶 Vodka de Vitaly: %d\n", playerInventory["vodka_vitaly"])
-
-	// Section loots spécifiques
-	fmt.Println("-- Loots ennemis --")
-	printIf := func(key, label string) {
-		if playerInventory[key] > 0 {
-			fmt.Printf("   %-22s %d\n", label+":", playerInventory[key])
-		}
-	}
-	printIf("dent_rat", "Dent de Rat")
-	printIf("dent_rat_luisante", "Dent de Rat Luisante")
-	printIf("gelée_visqueuse", "Gelée Visqueuse")
-	printIf("coeur_de_gelée", "Cœur de Gelée")
-	printIf("capuche_brigand", "Capuche de Brigand")
-	printIf("dague_ensorcelée", "Dague Ensorcelée")
-	printIf("plume_fleche", "Plume de Flèche")
-	printIf("carquois_gravé", "Carquois Gravé")
-	printIf("cendre_infernale", "Cendre Infernale")
-	printIf("braise_eternelle", "Braise Éternelle")
-	printIf("insigne_chevalier", "Insigne de Chevalier")
-	printIf("lame_ancient", "Lame Ancienne")
-	printIf("sang_berserker", "Sang de Berserker")
-	printIf("talisman_fureur", "Talisman de Fureur")
-	printIf("essence_sombre", "Essence Sombre")
-	printIf("noyau_occulte", "Noyau Occulte")
-	printIf("corne_demon", "Corne de Démon")
-	printIf("fragment_demoniaque", "Fragment Démoniaque")
-	printIf("parchemin_arcane", "Parchemin Arcane")
-	printIf("sceau_archimage", "Sceau d'Archimage")
-	printIf("embleme_champion", "Emblème de Champion")
-	printIf("aiguille_du_destin", "Aiguille du Destin")
-	printIf("fragment_mentor", "Fragment de Mentor")
-	printIf("souffle_mentor", "Souffle du Mentor")
 	// Affiche les artefacts équipés
 	artefacts := []string{}
 	for _, a := range currentPlayer.ArtefactsEquipes {
@@ -137,8 +82,8 @@ func showInventory() {
 	} else {
 		fmt.Println("🧿 Artefacts équipés: Aucun")
 	}
-	if playerStats.hasLegendaryWeapon {
-		fmt.Println("🌟 Excalibur Légendaire équipée!")
+	if currentPlayer.ArmeEquipee.Nom == dragonLore.Nom {
+		fmt.Println("🌟 AWP Dragon Lore équipée!")
 	}
 	fmt.Println("===================")
 }
@@ -156,11 +101,8 @@ func calculateAttackDamage() int {
 	// Bonus du Puff 9K : +15% par Puff 9K utilisé
 	puffBonus := float64(playerStats.attackBoost) / 100.0
 
-	// Bonus arme légendaire : +50%
+	// Bonus arme légendaire (ancien) retiré: Dragon Lore applique ses propres dégâts via ArmeEquipee
 	legendaryBonus := 0.0
-	if playerStats.hasLegendaryWeapon {
-		legendaryBonus = 0.5
-	}
 
 	totalDamage := float64(baseDamage) * (1.0 + puffBonus + legendaryBonus)
 

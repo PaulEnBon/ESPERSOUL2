@@ -126,22 +126,22 @@ func showItemForgeInterface() {
 // Interface de gambling (pour item.go)
 func showItemGamblingInterface() {
 	reader := bufio.NewReader(os.Stdin)
-	rand.Seed(time.Now().UnixNano())
+	// Note: RNG is auto-seeded in Go 1.20+
 
 	for {
 		fmt.Println("\n🎰 === CASINO SOUTERRAIN ===")
 		fmt.Printf("💰 Vos pièces: %d\n", playerInventory["pièces"])
 		fmt.Printf("⚔️  Vos épées: %d\n", playerInventory["épées"])
 		fmt.Printf("💊 Vos Puff 9K: %d\n", playerInventory["puff_9k"])
-		if playerStats.hasLegendaryWeapon {
-			fmt.Println("🌟 Arme légendaire équipée !")
+		if currentPlayer.ArmeEquipee.Nom == dragonLore.Nom {
+			fmt.Println("🌟 AWP Dragon Lore équipée !")
 		}
 
 		fmt.Println("\n📦 Caisses disponibles:")
 		fmt.Println("1. Caisse Bronze - 5 pièces (Chances mystérieuses...)")
 		fmt.Println("2. Caisse Argent - 25 pièces (Bonnes chances)")
 		fmt.Println("3. Caisse Or - 75 pièces (Très bonnes chances)")
-		fmt.Println("4. Caisse Legendary - 1000 pièces (Garanti légendaire !)")
+		fmt.Println("4. Caisse Legendary - 1000 pièces (Garanti Dragon Lore !)")
 		fmt.Println("5. Quitter le casino")
 		fmt.Print("Choisissez une caisse (1-5): ")
 
@@ -156,10 +156,10 @@ func showItemGamblingInterface() {
 				time.Sleep(1 * time.Second)
 
 				roll := rand.Intn(100)
-				if roll < 2 { // 2% chance d'arme légendaire
-					playerStats.hasLegendaryWeapon = true
-					fmt.Println("🌟 JACKPOT ! Vous obtenez l'EXCALIBUR LÉGENDAIRE !")
-					fmt.Println("⚡ +50% de dégâts d'attaque permanents !")
+				if roll < 2 { // 2% chance Dragon Lore
+					_ = EquiperArme(&currentPlayer, dragonLore)
+					fmt.Println("🐉 JACKPOT ! Vous obtenez l'AWP DRAGON LORE !")
+					fmt.Println("🔥 Arme ultime équipée.")
 				} else if roll < 10 { // 8% chance d'épées
 					amount := 1 + rand.Intn(2) // 1-2 épées
 					addToInventory("épées", amount)
@@ -183,10 +183,10 @@ func showItemGamblingInterface() {
 				time.Sleep(1 * time.Second)
 
 				roll := rand.Intn(100)
-				if roll < 5 { // 5% chance d'arme légendaire
-					playerStats.hasLegendaryWeapon = true
-					fmt.Println("🌟 INCROYABLE ! Vous obtenez l'EXCALIBUR LÉGENDAIRE !")
-					fmt.Println("⚡ +50% de dégâts d'attaque permanents !")
+				if roll < 5 { // 5% chance Dragon Lore
+					_ = EquiperArme(&currentPlayer, dragonLore)
+					fmt.Println("🐉 INCROYABLE ! Vous obtenez l'AWP DRAGON LORE !")
+					fmt.Println("🔥 Arme ultime équipée.")
 				} else if roll < 25 { // 20% chance d'épées multiples
 					amount := 2 + rand.Intn(3) // 2-4 épées
 					addToInventory("épées", amount)
@@ -211,10 +211,10 @@ func showItemGamblingInterface() {
 				time.Sleep(1 * time.Second)
 
 				roll := rand.Intn(100)
-				if roll < 15 { // 15% chance d'arme légendaire
-					playerStats.hasLegendaryWeapon = true
-					fmt.Println("🌟 FANTASTIQUE ! Vous obtenez l'EXCALIBUR LÉGENDAIRE !")
-					fmt.Println("⚡ +50% de dégâts d'attaque permanents !")
+				if roll < 15 { // 15% chance Dragon Lore
+					_ = EquiperArme(&currentPlayer, dragonLore)
+					fmt.Println("🐉 FANTASTIQUE ! Vous obtenez l'AWP DRAGON LORE !")
+					fmt.Println("🔥 Arme ultime équipée.")
 				} else if roll < 40 { // 25% chance d'épées premium
 					amount := 3 + rand.Intn(3) // 3-5 épées
 					addToInventory("épées", amount)
@@ -232,22 +232,22 @@ func showItemGamblingInterface() {
 				fmt.Println("❌ Vous n'avez pas assez de pièces !")
 			}
 
-		case "4": // Caisse Legendary - 150 pièces (100% légendaire)
+		case "4": // Caisse Legendary - 1000 pièces (100% Dragon Lore)
 			if playerInventory["pièces"] >= 1000 {
 				playerInventory["pièces"] -= 1000
 				fmt.Println("📦 *Ouverture de la caisse LEGENDARY...*")
 				time.Sleep(2 * time.Second)
 
-				playerStats.hasLegendaryWeapon = true
-				fmt.Println("🌟 LÉGENDAIRE GARANTI ! Vous obtenez l'EXCALIBUR LÉGENDAIRE !")
-				fmt.Println("⚡ +50% de dégâts d'attaque permanents !")
+				_ = EquiperArme(&currentPlayer, dragonLore)
+				fmt.Println("🐉 DRAGON LORE GARANTI ! Vous obtenez l'AWP DRAGON LORE !")
+				fmt.Println("🔥 Arme ultime équipée.")
 
 				// Bonus supplémentaire
 				bonusRoll := rand.Intn(3)
 				switch bonusRoll {
 				case 0:
-					addToInventory("épées", 5)
-					fmt.Println("🎁 Bonus : 5 épées supplémentaires !")
+					addToInventory("pièces", 100)
+					fmt.Println("🎁 Bonus : 100 pièces supplémentaires !")
 				case 1:
 					addToInventory("puff_9k", 3)
 					fmt.Println("🎁 Bonus : 3 Puff 9K supplémentaires !")

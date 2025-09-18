@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"math/rand"
-	"time"
 )
 
 // --- Structures ---
@@ -38,7 +37,7 @@ type EffetActif struct {
 
 // Applique un effet sur un personnage
 func AppliquerEffet(cible *Personnage, effet Effet) bool {
-	rand.Seed(time.Now().UnixNano())
+	// RNG auto-seeded in Go 1.20+
 
 	if rand.Float64() > effet.ChanceAppliquer {
 		fmt.Printf("L'effet %s a échoué sur %s\n", effet.Nom, cible.Nom)
