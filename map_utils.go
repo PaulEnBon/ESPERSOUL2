@@ -136,20 +136,34 @@ func cellToSymbol(val int) string {
 
 // Retourne un symbole adapté tenant compte de la coordonnée (per-class emoji)
 func cellToSymbolAt(x, y, val int) string {
-	// Cas spécial: Mentor (salle1 coord (8,3)) -> toujours 🧙 (version simplifiée)
-	if !useASCII {
-		if currentMapDisplayName == "salle1" && x == 8 && y == 3 {
-			// Que ce soit encore un ennemi (2) ou déjà PNJ (3) => afficher le même emoji mentor
-			if val == 2 || val == 3 || val == 12 { // inclure safety super flag improbable
-				return "🧙"
-			}
+	// Cas spécial: Mentor salle1 (8,3)
+	// Affiche 🧙 uniquement si :
+	//  - la salle courante est salle1
+	//  - coordonnées (8,3)
+	//  - soit encore l'ennemi non vaincu (val == 2 ou 12 ET pas encore marqué defeated),
+	//    soit transformé en PNJ (val == 3 et pnjTransformed true)
+	// currentMapDisplayName peut être vide lors du tout premier affichage; fallback sur currentMapGlobalRef
+	activeMapName := currentMapDisplayName
+	if activeMapName == "" && currentMapGlobalRef != "" {
+		activeMapName = currentMapGlobalRef
+	}
+	if !useASCII && activeMapName == "salle1" && x == 8 && y == 3 {
+		key := fmt.Sprintf("%d_%d", 8, 3)
+		// Après purification -> PNJ Mentor Suprême
+		if pnjTransformed["salle1"][key] {
+			return "🎓"
 		}
-		if val == 2 || val == 12 {
-			if m := enemyDisplayedEmoji[currentMapDisplayName]; m != nil {
-				key := fmt.Sprintf("%d,%d", x, y)
-				if e, ok := m[key]; ok {
-					return e
-				}
+		// Avant purification tant que l'ennemi n'est pas vaincu -> Mentor Maudit
+		if (val == 2 || val == 12) && !enemiesDefeated["salle1"][key] {
+			return "🧙"
+		}
+		// Sinon rendu normal
+	}
+	if !useASCII && (val == 2 || val == 12) {
+		if m := enemyDisplayedEmoji[activeMapName]; m != nil {
+			key := fmt.Sprintf("%d,%d", x, y)
+			if e, ok := m[key]; ok {
+				return e
 			}
 		}
 	}

@@ -246,8 +246,6 @@ func showDialogue(currentMap string, x, y int) {
 		// Cas fallback: si c'est le mentor transformé mais dialogues non trouvés
 		if currentMap == "salle1" && key == "8_3" {
 			fmt.Println("🧙 Mentor Suprême: Merci de m'avoir libéré !")
-		} else {
-			fmt.Println("👨 PNJ: Merci de m'avoir libéré !")
 		}
 		fmt.Print("Appuyez sur une touche pour continuer...")
 		_ = readKey()

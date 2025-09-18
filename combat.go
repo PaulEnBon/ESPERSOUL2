@@ -5,13 +5,26 @@ import (
 	"math/rand"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/eiannone/keyboard"
 )
 
 // Emoji par classe d'ennemi (affiché dans l'intro du combat)
 func emojiForEnemyName(name string) string {
-	switch name {
+	// Normaliser: enlever préfixes d'emojis / symboles et espaces
+	clean := strings.TrimSpace(name)
+	for len(clean) > 0 {
+		r, size := utf8.DecodeRuneInString(clean)
+		// On considère qu'un nom commence au premier caractère lettre ou chiffre
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			break
+		}
+		clean = strings.TrimSpace(clean[size:])
+	}
+	// Certains noms peuvent être composés avec indicateurs supplémentaires; on fait une comparaison directe
+	switch clean {
 	case "Rat":
 		return "🐀"
 	case "Gelée":
@@ -38,9 +51,12 @@ func emojiForEnemyName(name string) string {
 		return "🧙"
 	case "Mentor Suprême":
 		return "🎓"
-	default:
-		return "👾"
 	}
+	// Fallback heuristique: si contient "Mentor" on force l'emoji mage
+	if strings.Contains(clean, "Mentor") {
+		return "🧙"
+	}
+	return "👾"
 }
 
 // ---- Récompenses configurables ----
@@ -545,6 +561,7 @@ func combat(currentMap string, isSuper bool) interface{} {
 	}
 
 	fmt.Println("\n🗡️  COMBAT ENGAGÉ ! 🗡️")
+	// Extra sécurisation: recalculer l'emoji à partir du nom nettoyé (utile si préfixes ajoutés ailleurs)
 	enemyEmoji := emojiForEnemyName(enemy.Nom)
 	if isSuper {
 		fmt.Printf("Vous affrontez %s %s (SURPUISSANT)\n", enemyEmoji, enemy.Nom)
@@ -830,10 +847,11 @@ func combatWithAssignedType(currentMap string, isSuper bool, name string) interf
 	}
 
 	fmt.Println("\n🗡️  COMBAT ENGAGÉ ! 🗡️")
+	enemyEmoji := emojiForEnemyName(enemy.Nom)
 	if isSuper {
-		fmt.Printf("Vous affrontez un ENNEMI SURPUISSANT: %s\n", enemy.Nom)
+		fmt.Printf("Vous affrontez %s %s (SURPUISSANT)\n", enemyEmoji, enemy.Nom)
 	} else {
-		fmt.Printf("Vous affrontez: %s\n", enemy.Nom)
+		fmt.Printf("Vous affrontez %s %s\n", enemyEmoji, enemy.Nom)
 	}
 
 	for player.PV > 0 && enemy.PV > 0 {

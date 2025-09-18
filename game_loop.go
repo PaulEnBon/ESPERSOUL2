@@ -897,15 +897,19 @@ func RunGameLoop(currentMap string) {
 			mapDataGlobalRef = mapData
 
 			// Placer le joueur selon la transition
-			if currentMap == "salle8" {
-				placePlayerAt(mapData, 3, 6) // Position spéciale pour la salle secrète
+			if currentMap == "salle8" { // Salle secrète => position spéciale inchangée
+				placePlayerAt(mapData, 3, 6)
 			} else if currentMap == "salle1" {
-				// Spawn fixe au respawn
-				placePlayerAt(mapData, 8, 5)
+				// Deux cas: retour suite à mort (prevMap != salle1 via handleCellInteraction) ou simple transition (porte)
+				if haveSpawn { // Transition via porte -> utiliser spawn défini dans transitions
+					placePlayerAt(mapData, spawnX, spawnY)
+				} else {
+					// Respawn (mort ou cas sans spawn explicite) -> position fixe (8,5)
+					placePlayerAt(mapData, 8, 5)
+				}
 			} else if haveSpawn {
 				placePlayerAt(mapData, spawnX, spawnY)
 			} else {
-				// Position par défaut
 				placePlayerAt(mapData, len(mapData[0])/2, len(mapData)/2)
 			}
 			currentMapGlobalRef = currentMap
