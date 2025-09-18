@@ -11,6 +11,191 @@ import (
 	"github.com/eiannone/keyboard"
 )
 
+// --------- Simple UI helpers (ASCII/emoji) for a Pokémon-like battle window ---------
+
+func hpBar(current, max, width int) string {
+	if max <= 0 {
+		max = 1
+	}
+	if current < 0 {
+		current = 0
+	}
+	if current > max {
+		current = max
+	}
+	filled := int(float64(current) / float64(max) * float64(width))
+	if filled < 0 {
+		filled = 0
+	}
+	if filled > width {
+		filled = width
+	}
+	bar := strings.Repeat("█", filled) + strings.Repeat("░", width-filled)
+	// Color hint via emojis and counts
+	return bar
+}
+
+// Computes effective armor after modifiers for display purposes
+func effectiveArmor(p *Personnage) int {
+	if p == nil {
+		return 0
+	}
+	_, _, _, _, modifArmure, _ := CalculerModificateurs(p)
+	if modifArmure < 0.1 {
+		modifArmure = 0.1
+	}
+	eff := int(float64(p.Armure) * modifArmure)
+	if eff < 0 {
+		eff = 0
+	}
+	return eff
+}
+
+// Armor-aware HP bar: increases visual fill based on damage mitigation from armor
+func hpBarWithArmor(current, max, armor, width int) string {
+	if max <= 0 {
+		max = 1
+	}
+	if current < 0 {
+		current = 0
+	}
+	if current > max {
+		current = max
+	}
+	// Reduction model from degats.go: damageTaken = base * 100/(100+armor)
+	// So effective HP factor = (100+armor)/100
+	factor := 1.0 + (float64(armor) / 100.0)
+	scaledRatio := (float64(current) / float64(max)) * factor
+	if scaledRatio > 1.0 {
+		scaledRatio = 1.0
+	}
+	if scaledRatio < 0.0 {
+		scaledRatio = 0.0
+	}
+	filled := int(scaledRatio * float64(width))
+	if filled < 0 {
+		filled = 0
+	}
+	if filled > width {
+		filled = width
+	}
+	return strings.Repeat("█", filled) + strings.Repeat("░", width-filled)
+}
+
+// ANSI helpers for dynamic coloring
+func hpRatio(cur, max int) float64 {
+	if max <= 0 {
+		return 0
+	}
+	if cur < 0 {
+		cur = 0
+	}
+	if cur > max {
+		cur = max
+	}
+	return float64(cur) / float64(max)
+}
+
+func ansiColorForHP(cur, max int) string {
+	r := hpRatio(cur, max)
+	// Red <20%, Yellow <50%, Green otherwise
+	if r <= 0.20 {
+		return "\033[31m" // red
+	}
+	if r <= 0.50 {
+		return "\033[33m" // yellow
+	}
+	return "\033[32m" // green
+}
+
+func ansiReset() string { return "\033[0m" }
+
+func colorize(s, color string) string {
+	if color == "" {
+		return s
+	}
+	return color + s + ansiReset()
+}
+
+func clearScreen() {
+	fmt.Print("\033[H\033[2J")
+}
+
+func printBattleHeader(player, enemy Personnage, isSuper bool) {
+	clearScreen()
+	eIcon := emojiForEnemyName(enemy.Nom)
+	title := "⚔️ COMBAT"
+	if isSuper {
+		title = "⚔️ COMBAT — ENNEMI SURPUISSANT"
+	}
+	// Determine frame color based on HP status (priority: player critical -> red; enemy critical -> green; player mid -> yellow)
+	pR := hpRatio(player.PV, player.PVMax)
+	eR := hpRatio(enemy.PV, enemy.PVMax)
+	frameColor := "\033[36m" // cyan default
+	if pR <= 0.20 {
+		frameColor = "\033[31m" // red: danger
+	} else if eR <= 0.20 {
+		frameColor = "\033[32m" // green: avantage
+	} else if pR <= 0.50 {
+		frameColor = "\033[33m" // yellow: attention
+	}
+
+	// Prepare names (visible trimming)
+	ename := fmt.Sprintf("%s %s", eIcon, enemy.Nom)
+	if len(ename) > 28 {
+		ename = ename[:28]
+	}
+	pname := currentPlayer.Nom
+	if pname == "" {
+		pname = "Joueur"
+	}
+	if len(pname) > 28 {
+		pname = pname[:28]
+	}
+
+	// Compute visible lengths using raw (non-colored) bar for sizing
+	rawBar := strings.Repeat("█", 24)
+	rawEnemyLine := fmt.Sprintf(" Ennemi: %-28s  PV: [%-24s] %d/%d ", ename, rawBar, enemy.PV, enemy.PVMax)
+	rawPlayerLine := fmt.Sprintf(" Joueur: %-28s  PV: [%-24s] %d/%d ", pname, rawBar, player.PV, player.PVMax)
+	actionsLine := "  ⚔️  Attaque (A)   🎒 Objets (O)   🏃 Fuir (F)               "
+	// Base inner width and dynamic expansion to fit longer PV values
+	innerWidth := 64
+	if l := len(title); l > innerWidth {
+		innerWidth = l
+	}
+	if l := len(rawEnemyLine); l > innerWidth {
+		innerWidth = l
+	}
+	if l := len(rawPlayerLine); l > innerWidth {
+		innerWidth = l
+	}
+	if l := len(actionsLine); l > innerWidth {
+		innerWidth = l
+	}
+
+	// Top frame (colored)
+	fmt.Println(colorize("╔"+strings.Repeat("═", innerWidth)+"╗", frameColor))
+	// Title row padded
+	fmt.Println(colorize("║ "+fmt.Sprintf("%-*s", innerWidth-2, title)+" ║", frameColor))
+	fmt.Println(colorize("╠"+strings.Repeat("═", innerWidth)+"╣", frameColor))
+	// Enemy panel (top right style like Pokémon)
+	ebar := hpBar(enemy.PV, enemy.PVMax, 24)
+	ebarColored := colorize(ebar, ansiColorForHP(enemy.PV, enemy.PVMax))
+	enemyContent := fmt.Sprintf(" Ennemi: %-28s  PV: [%-24s] %d/%d ", ename, ebarColored, enemy.PV, enemy.PVMax)
+	fmt.Printf("║ %-*s ║\n", innerWidth, enemyContent)
+	// Empty spacer row
+	fmt.Printf("║ %-*s ║\n", innerWidth, "")
+	// Player panel (bottom left style)
+	pbar := hpBar(player.PV, player.PVMax, 24)
+	pbarColored := colorize(pbar, ansiColorForHP(player.PV, player.PVMax))
+	playerContent := fmt.Sprintf(" Joueur: %-28s  PV: [%-24s] %d/%d ", pname, pbarColored, player.PV, player.PVMax)
+	fmt.Printf("║ %-*s ║\n", innerWidth, playerContent)
+	fmt.Println(colorize("╠"+strings.Repeat("═", innerWidth)+"╣", frameColor))
+	// Actions row with icons (padded)
+	fmt.Printf("║ %-*s ║\n", innerWidth, actionsLine)
+	fmt.Println(colorize("╚"+strings.Repeat("═", innerWidth)+"╝", frameColor))
+}
+
 // Emoji par classe d'ennemi (affiché dans l'intro du combat)
 func emojiForEnemyName(name string) string {
 	// Normaliser: enlever préfixes d'emojis / symboles et espaces
@@ -240,24 +425,74 @@ func chooseCompetence(p *Personnage) (Competence, bool, bool) {
 func objectMenu(player, enemy *Personnage) bool {
 	for {
 		fmt.Println("\n🎒 Objets:")
+		printed := 0
+		have := func(key string) int { return playerInventory[key] }
 		// Soins
-		fmt.Printf("  1) Potion (x%d) — +70 PV\n", playerInventory["potions"])
-		fmt.Printf("  2) Potion Mineure (x%d) — soin léger\n", playerInventory["potion_mineure"])
-		fmt.Printf("  3) Potion Majeure (x%d) — soin puissant\n", playerInventory["potion_majeure"])
-		fmt.Printf("  4) Potion Suprême (x%d) — soin massif\n", playerInventory["potion_supreme"])
-		fmt.Printf("  5) Antidote (x%d) — retire poison\n", playerInventory["antidote"])
-		fmt.Printf("  V) Vodka de Vitaly (x%d) — régénère toute la vie !\n", playerInventory["vodka_vitaly"])
+		if have("potions") > 0 {
+			fmt.Printf("  1) Potion (x%d) — +70 PV\n", have("potions"))
+			printed++
+		}
+		if have("potion_mineure") > 0 {
+			fmt.Printf("  2) Potion Mineure (x%d) — soin léger\n", have("potion_mineure"))
+			printed++
+		}
+		if have("potion_majeure") > 0 {
+			fmt.Printf("  3) Potion Majeure (x%d) — soin puissant\n", have("potion_majeure"))
+			printed++
+		}
+		if have("potion_supreme") > 0 {
+			fmt.Printf("  4) Potion Suprême (x%d) — soin massif\n", have("potion_supreme"))
+			printed++
+		}
+		if have("antidote") > 0 {
+			fmt.Printf("  5) Antidote (x%d) — retire poison\n", have("antidote"))
+			printed++
+		}
+		if have("vodka_vitaly") > 0 {
+			fmt.Printf("  V) Vodka de Vitaly (x%d) — régénère toute la vie !\n", have("vodka_vitaly"))
+			printed++
+		}
 		// Buffs
-		fmt.Printf("  6) Puff 9K (x%d) — +15%%%% dégâts (loot) + buff, -5 PV\n", playerInventory["puff_9k"])
-		fmt.Printf("  7) Élixir de Force (x%d) — buff dégâts\n", playerInventory["elixir_force"])
-		fmt.Printf("  8) Élixir de Vitesse (x%d) — buff dégâts magiques\n", playerInventory["elixir_vitesse"])
-		fmt.Printf("  9) Élixir de Précision (x%d) — buff dégâts/crit\n", playerInventory["elixir_critique"])
+		if have("puff_9k") > 0 {
+			fmt.Printf("  6) Puff 9K (x%d) — +15%%%% dégâts (loot) + buff, -5 PV\n", have("puff_9k"))
+			printed++
+		}
+		if have("elixir_force") > 0 {
+			fmt.Printf("  7) Élixir de Force (x%d) — buff dégâts\n", have("elixir_force"))
+			printed++
+		}
+		if have("elixir_vitesse") > 0 {
+			fmt.Printf("  8) Élixir de Vitesse (x%d) — buff dégâts magiques\n", have("elixir_vitesse"))
+			printed++
+		}
+		if have("elixir_critique") > 0 {
+			fmt.Printf("  9) Élixir de Précision (x%d) — buff dégâts/crit\n", have("elixir_critique"))
+			printed++
+		}
 		// Offensifs/Utilitaires
-		fmt.Printf("  A) Potion de Dégâts (x%d) — dégâts magiques\n", playerInventory["potion_degats"])
-		fmt.Printf("  B) Bombe Incendiaire (x%d) — dégâts + brûlure\n", playerInventory["bombe_incendiaire"])
-		fmt.Printf("  C) Bombe Givrante (x%d) — dégâts + étourdissement\n", playerInventory["bombe_givrante"])
-		fmt.Printf("  D) Grenade Fumigène (x%d) — nébulation (aveugle)\n", playerInventory["grenade_fumigene"])
-		fmt.Printf("  E) Parchemin de Dispersion (x%d) — affaiblissement\n", playerInventory["parchemin_dispersion"])
+		if have("potion_degats") > 0 {
+			fmt.Printf("  A) Potion de Dégâts (x%d) — dégâts magiques\n", have("potion_degats"))
+			printed++
+		}
+		if have("bombe_incendiaire") > 0 {
+			fmt.Printf("  B) Bombe Incendiaire (x%d) — dégâts + brûlure\n", have("bombe_incendiaire"))
+			printed++
+		}
+		if have("bombe_givrante") > 0 {
+			fmt.Printf("  C) Bombe Givrante (x%d) — dégâts + étourdissement\n", have("bombe_givrante"))
+			printed++
+		}
+		if have("grenade_fumigene") > 0 {
+			fmt.Printf("  D) Grenade Fumigène (x%d) — nébulation (aveugle)\n", have("grenade_fumigene"))
+			printed++
+		}
+		if have("parchemin_dispersion") > 0 {
+			fmt.Printf("  E) Parchemin de Dispersion (x%d) — affaiblissement\n", have("parchemin_dispersion"))
+			printed++
+		}
+		if printed == 0 {
+			fmt.Println("  (Aucun objet disponible)")
+		}
 		fmt.Println("  [R]etour")
 		fmt.Print("Votre choix: ")
 		if globalKeyEvents == nil {
@@ -560,23 +795,13 @@ func combat(currentMap string, isSuper bool) interface{} {
 		enemyAttackBase = 12
 	}
 
-	fmt.Println("\n🗡️  COMBAT ENGAGÉ ! 🗡️")
-	// Extra sécurisation: recalculer l'emoji à partir du nom nettoyé (utile si préfixes ajoutés ailleurs)
-	enemyEmoji := emojiForEnemyName(enemy.Nom)
-	if isSuper {
-		fmt.Printf("Vous affrontez %s %s (SURPUISSANT)\n", enemyEmoji, enemy.Nom)
-	} else {
-		fmt.Printf("Vous affrontez %s %s\n", enemyEmoji, enemy.Nom)
-	}
+	printBattleHeader(player, enemy, isSuper)
 
 	for player.PV > 0 && enemy.PV > 0 {
-		fmt.Printf("\n💚 Vos PV: %d/%d | 💀 PV Ennemi: %d/%d\n", player.PV, player.PVMax, enemy.PV, enemy.PVMax)
+		printBattleHeader(player, enemy, isSuper)
 		if playerStats.hasLegendaryWeapon {
 			fmt.Println("🌟 Excalibur équipée (+50% dégâts de loot)")
 		}
-
-		// Affichage des actions (Objets via sous-menu)
-		fmt.Println("Actions: [A]ttaquer, [O]bjet, [F]uir")
 		fmt.Print("Choisissez une action: ")
 		// Utilise le même canal que la boucle de jeu
 		if globalKeyEvents == nil {

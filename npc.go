@@ -141,10 +141,21 @@ func showDialogue(currentMap string, x, y int) {
 		return r
 	}
 
+	// Helper pour ré-afficher la map immédiatement après le dialogue
+	reRenderMapAfterDialogue := func() {
+		if mapDataGlobalRef != nil {
+			printMap(mapDataGlobalRef)
+			if currentMapGlobalRef != "" {
+				fmt.Printf("📍 Salle actuelle: %s\n", currentMapGlobalRef)
+			}
+		}
+	}
+
 	// Cas spécial pour le marchand de salle4
 	if currentMap == "salle4" && key == "1_3" {
 		npcData := npcDialogues[currentMap][key]
-		fmt.Println("\n💬 === DIALOGUE ===")
+		clearScreen()
+		fmt.Println("💬 === DIALOGUE ===")
 		for i, line := range npcData.dialogues {
 			fmt.Printf("👨 PNJ: %s\n", line)
 
@@ -177,13 +188,15 @@ func showDialogue(currentMap string, x, y int) {
 		fmt.Println("===================")
 
 		showMerchantInterface()
+		reRenderMapAfterDialogue()
 		return
 	}
 
 	// Cas spécial pour le forgeron de salle5
 	if currentMap == "salle5" && key == "2_2" {
 		npcData := npcDialogues[currentMap][key]
-		fmt.Println("\n💬 === DIALOGUE ===")
+		clearScreen()
+		fmt.Println("💬 === DIALOGUE ===")
 		for i, line := range npcData.dialogues {
 			fmt.Printf("🔨 Forgeron: %s\n", line)
 			if i < len(npcData.dialogues)-1 {
@@ -196,13 +209,15 @@ func showDialogue(currentMap string, x, y int) {
 		fmt.Println("===================")
 
 		showForgeInterface()
+		reRenderMapAfterDialogue()
 		return
 	}
 
 	// Cas spécial pour le gambling de salle7
 	if currentMap == "salle7" && key == "2_2" {
 		npcData := npcDialogues[currentMap][key]
-		fmt.Println("\n💬 === DIALOGUE ===")
+		clearScreen()
+		fmt.Println("💬 === DIALOGUE ===")
 		for i, line := range npcData.dialogues {
 			fmt.Printf("🎰 Croupier: %s\n", line)
 			if i < len(npcData.dialogues)-1 {
@@ -215,12 +230,14 @@ func showDialogue(currentMap string, x, y int) {
 		fmt.Println("===================")
 
 		showGamblingInterface()
+		reRenderMapAfterDialogue()
 		return
 	}
 
 	// Fin de jeu spéciale: salle1 PNJ (8,3) si item 'sida'
 	if currentMap == "salle1" && key == "8_3" && playerInventory["sida"] > 0 {
-		fmt.Println("\n💬 === DIALOGUE ===")
+		clearScreen()
+		fmt.Println("💬 === DIALOGUE ===")
 		fmt.Println("👨 PNJ: ...Cet objet... D'où le tiens-tu ?")
 		fmt.Println("👨 PNJ: Si tu me le donnes, je pourrai briser définitivement la malédiction.")
 		fmt.Println("👨 PNJ: Veux-tu ME DONNER 'sida' et mettre fin au jeu ? (o/n)")
@@ -236,6 +253,7 @@ func showDialogue(currentMap string, x, y int) {
 			fmt.Println("👨 PNJ: Très bien... Peut-être plus tard.")
 			fmt.Print("Appuyez sur une touche pour continuer...")
 			_ = readKey()
+			reRenderMapAfterDialogue()
 			return
 		}
 	}
@@ -249,12 +267,14 @@ func showDialogue(currentMap string, x, y int) {
 		}
 		fmt.Print("Appuyez sur une touche pour continuer...")
 		_ = readKey()
+		reRenderMapAfterDialogue()
 		return
 	}
 
 	// Cas spécial: soigneur de salle11 (3,2)
 	if currentMap == "salle11" && key == "3_2" {
-		fmt.Println("\n💬 === DIALOGUE ===")
+		clearScreen()
+		fmt.Println("💬 === DIALOGUE ===")
 		for i, line := range npcData.dialogues {
 			fmt.Printf("🧙 Soigneur: %s\n", line)
 			if i < len(npcData.dialogues)-1 {
@@ -281,10 +301,12 @@ func showDialogue(currentMap string, x, y int) {
 		fmt.Print("Appuyez sur une touche pour fermer...")
 		_ = readKey()
 		fmt.Println("===================")
+		reRenderMapAfterDialogue()
 		return
 	}
 
-	fmt.Println("\n💬 === DIALOGUE ===")
+	clearScreen()
+	fmt.Println("💬 === DIALOGUE ===")
 	for i, line := range npcData.dialogues {
 		if currentMap == "salle1" && key == "8_3" {
 			fmt.Printf("🧙 Mentor Suprême: %s\n", line)
@@ -315,4 +337,5 @@ func showDialogue(currentMap string, x, y int) {
 	fmt.Print("Appuyez sur une touche pour fermer...")
 	_ = readKey()
 	fmt.Println("===================")
+	reRenderMapAfterDialogue()
 }

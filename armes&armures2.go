@@ -76,6 +76,7 @@ func RecomputeFromBaseAndEquip(p *Personnage) {
 
 	oldPV := p.PV
 	oldPVMax := p.PVMax
+	basePVMax := base.PVMax
 
 	// Remettre les stats de base de la classe
 	p.PVMax = base.PVMax
@@ -99,10 +100,15 @@ func RecomputeFromBaseAndEquip(p *Personnage) {
 		_ = EquiperArme(p, p.ArmesDisponibles[p.NiveauArme])
 	}
 
-	// Préserver le ratio de PV après la montée de stats
+	// PV effectifs: conserver la proportion par rapport à la base, puis ajouter les HP d'armure
 	if oldPVMax > 0 {
 		ratio := float64(oldPV) / float64(oldPVMax)
-		newPV := int(ratio * float64(p.PVMax))
+		armorHP := 0
+		if p.ArmureEquipee.Nom != "" {
+			armorHP = p.ArmureEquipee.HP
+		}
+		scaledBase := int(ratio * float64(basePVMax))
+		newPV := scaledBase + armorHP
 		if newPV < 1 {
 			newPV = 1
 		}
