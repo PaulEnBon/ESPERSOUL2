@@ -365,8 +365,8 @@ func CreerEffet(typeEffet string, puissance int) *Effet {
 	case "Affaiblissement":
 		return &Effet{
 			Nom:             "Affaiblissement",
-			ToursRestants:   2 + puissance/2,                // 2-4 tours
-			ChanceAppliquer: 0.6 + float64(puissance)*0.08,  // 60%-100%
+			ToursRestants:   2 + puissance/2,                 // 2-4 tours
+			ChanceAppliquer: 0.6 + float64(puissance)*0.08,   // 60%-100%
 			ModifDegats:     -0.15 - float64(puissance)*0.07, // -15% à -50% dégâts physiques
 			ModifDegatsMag:  -0.10 - float64(puissance)*0.07, // -10% à -45% dégâts magiques
 		}

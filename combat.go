@@ -12,6 +12,7 @@ import (
 
 // Controls whether enemies use the synthesized 4-skill kit (true for all normal monsters)
 var combatForceSynthKit = true
+
 // Tracks the last enemy skill name used, for HUD display in header
 var combatLastEnemySkill string
 

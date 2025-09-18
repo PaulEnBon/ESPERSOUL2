@@ -291,8 +291,8 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 	case 2, 12: // ennemi (2=normal, 12=super)
 		addHUDMessage("⚔️ Vous rencontrez une créature maudite !")
 		isSuper := (cell == 12)
-	// All enemies use the synthesized 4-skill kit
-	combatForceSynthKit = true
+		// All enemies use the synthesized 4-skill kit
+		combatForceSynthKit = true
 		result := combat(currentMap, isSuper)
 
 		enemyKey := fmt.Sprintf("%d_%d", newX, newY)
