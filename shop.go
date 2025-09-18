@@ -48,6 +48,7 @@ func showMerchantInterface() {
 		fmt.Println("7. Potion majeure - 10 pièces")
 		fmt.Println("8. Potion suprême - 25 pièces")
 		fmt.Println("9. Potion de dégâts - 6 pièces")
+		fmt.Println("i. Hache - 30 pièces (permet de couper les arbres)")
 		fmt.Println("h. Vodka de Vitaly - 50 pièces (régénère toute la vie)")
 		fmt.Println("a. Bombe incendiaire - 12 pièces")
 		fmt.Println("b. Bombe givrante - 14 pièces")
@@ -57,7 +58,7 @@ func showMerchantInterface() {
 		fmt.Println("f. Élixir de vitesse - 10 pièces")
 		fmt.Println("g. Élixir de précision - 15 pièces")
 		fmt.Println("q. Quitter le magasin")
-		fmt.Print("Choisissez un article (1-9, a-g, q): ")
+		fmt.Print("Choisissez un article (1-9, a-g, i, q): ")
 		key := readKey()
 
 		switch key {
@@ -149,6 +150,16 @@ func showMerchantInterface() {
 				fmt.Println("✨ Vous avez acheté une potion de dégâts !")
 			} else {
 				fmt.Println("❌ Vous n'avez pas assez de pièces! (6 pièces nécessaires)")
+			}
+
+		case 'i': // Hache - 30 pièces
+			if playerInventory["pièces"] >= 30 {
+				playerInventory["pièces"] -= 30
+				playerInventory["hache"]++
+				fmt.Println("⛏️ Vous avez acheté une HACHE ! Vous pouvez maintenant couper les arbres (🌳).")
+				fmt.Println("Approchez-vous d'un arbre et marchez dessus pour le couper.")
+			} else {
+				fmt.Println("❌ Vous n'avez pas assez de pièces! (30 pièces nécessaires)")
 			}
 
 		case 'a': // Bombe incendiaire - 12 pièces

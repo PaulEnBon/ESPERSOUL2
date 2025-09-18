@@ -18,6 +18,7 @@ var playerInventory = map[string]int{
 	"épées":          0,
 	"clés_spéciales": 0,
 	"puff_9k":        0, // Nouvel item boost d'attaque
+	"hache":          0, // Permet de couper les arbres
 	// Nouveaux objets utilisables en combat
 	"potion_mineure":       0,
 	"potion_majeure":       0,
@@ -67,6 +68,7 @@ func showInventory() {
 	fmt.Printf("   Élixir de vitesse:   %d\n", playerInventory["elixir_vitesse"])
 	fmt.Printf("   Élixir de précision: %d\n", playerInventory["elixir_critique"])
 	fmt.Printf("💊 Puff 9K: %d\n", playerInventory["puff_9k"])
+	fmt.Printf("🪓 Hache: %d\n", playerInventory["hache"])
 	fmt.Printf("🍶 Vodka de Vitaly: %d\n", playerInventory["vodka_vitaly"])
 	// Affiche les artefacts équipés
 	artefacts := []string{}

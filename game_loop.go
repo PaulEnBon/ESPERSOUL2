@@ -105,6 +105,9 @@ func clearHUDMessages() {
 // Canal global pour le clavier, réutilisé par le combat pour éviter les conflits d'entrée
 var globalKeyEvents <-chan keyboard.KeyEvent
 
+// Flag pour demander un rechargement de la carte après utilisation du cheat menu
+var cheatReloadRequested bool
+
 // Applique l'état des ennemis vaincus sur la map
 func applyEnemyStates(mapData [][]int, currentMap string) {
 	for y := 0; y < len(mapData); y++ {
@@ -243,6 +246,21 @@ func canLeaveSalle1() bool {
 // Gère les interactions avec les différents types de cases
 func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData [][]int, px, py int) (bool, string) {
 	switch cell {
+	case 80: // Arbre
+		// Si le joueur a une hache, couper l'arbre et avancer
+		if playerInventory["hache"] > 0 {
+			// Efface l'arbre côté persistance décor (si suivi) et sur la carte en mémoire
+			RemoveTree(currentMap, newX, newY)
+			MarkTreeCut(currentMap, newX, newY)
+			mapData[newY][newX] = 0
+			// Déplacer le joueur
+			mapData[py][px] = 0
+			mapData[newY][newX] = 1
+			addHUDMessage("🪓 Vous coupez l'arbre. Le passage est libre.")
+			return false, currentMap
+		}
+		// Sinon, bloqué comme un mur
+		return false, currentMap
 	case 9: // mur
 		return false, currentMap
 	case 4: // Marchand permanent ou PNJ gambling
@@ -737,7 +755,10 @@ func getPlayerMovement(events <-chan keyboard.KeyEvent, px, py int) (int, int, b
 	if debugMode {
 		if processCheatSequence(e) {
 			showCheatMenu(&currentMapGlobalRef, &mapDataGlobalRef)
+			// Appliquer les états ennemis sur la carte potentiellement modifiée par les cheats
 			applyEnemyStates(mapDataGlobalRef, currentMapGlobalRef)
+			// Demander au run loop d'adopter les nouvelles refs (TP, placements, etc.)
+			cheatReloadRequested = true
 			return px, py, true
 		}
 	}
@@ -774,9 +795,12 @@ func isValidMovement(x, y int, mapData [][]int) bool {
 	if mapData[y][x] == 9 { // mur
 		return false
 	}
-	// Les arbres sont bloquants comme les murs
+	// Les arbres sont bloquants sauf si le joueur possède une hache
 	if mapData[y][x] == 80 { // arbre
-		return false
+		if playerInventory["hache"] <= 0 {
+			return false
+		}
+		// autoriser le mouvement: l'abattage sera géré dans handleCellInteraction
 	}
 	return true
 }
@@ -791,6 +815,8 @@ func RunGameLoop(currentMap string) {
 	mapData := copyMap(salles[currentMap])
 	// Appliquer les décorations (arbres, etc.) sur la carte chargée
 	applyDecorations(currentMap, mapData)
+	// Puis retirer les arbres déjà coupés (persistance)
+	applyCutTrees(currentMap, mapData)
 
 	// Auto-équipe la Lunette d'Erwann si la classe est Erwann
 	if currentPlayer.Nom == "Erwann" {
@@ -868,6 +894,15 @@ func RunGameLoop(currentMap string) {
 			return // Le joueur a quitté le jeu
 		}
 
+		// Si le cheat menu a modifié la carte/salle, adopter les refs globales
+		if cheatReloadRequested {
+			currentMap = currentMapGlobalRef
+			mapData = mapDataGlobalRef
+			cheatReloadRequested = false
+			// Recommencer l'itération pour afficher la nouvelle carte
+			continue
+		}
+
 		// Si les coordonnées n'ont pas changé (entrée invalide), continuer la boucle
 		if newX == px && newY == py {
 			continue
@@ -896,8 +931,9 @@ func RunGameLoop(currentMap string) {
 		if transitionNeeded {
 			currentMap = newMap
 			mapData = copyMap(salles[currentMap])
-			// Ré-appliquer les décorations pour la nouvelle carte
+			// Ré-appliquer les décorations pour la nouvelle carte puis retirer les arbres coupés
 			applyDecorations(currentMap, mapData)
+			applyCutTrees(currentMap, mapData)
 			currentMapDisplayName = currentMap
 			assignEnemyEmojis(currentMap, mapData)
 			applyEnemyStates(mapData, currentMap)
