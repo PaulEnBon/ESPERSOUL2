@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -20,10 +21,21 @@ func CreationDuPersonnage(app *tview.Application, pages *tview.Pages) tview.Prim
 	details.SetBorder(true)
 	details.SetTitle("Équipement")
 
-	// Préparer la liste des classes depuis classes.go
-	classNames := AllClassNames()
+	// Préparer la liste des classes depuis classes.go, en EXCLUANT les classes secrètes
+	all := AllClasses()
+	filtered := make([]Personnage, 0, len(all))
+	for _, c := range all {
+		if c.Nom == "Erwann" || c.Nom == "Gabriel" || c.Nom == "Vitaly" {
+			continue
+		}
+		filtered = append(filtered, c)
+	}
+	classNames := make([]string, 0, len(filtered))
+	for _, c := range filtered {
+		classNames = append(classNames, c.Nom)
+	}
 	selectedIdx := 0
-	selectedClass := func() Personnage { return AllClasses()[selectedIdx] }
+	selectedClass := func() Personnage { return filtered[selectedIdx] }
 
 	updateDetails := func(p Personnage) {
 		var b strings.Builder
@@ -45,10 +57,14 @@ func CreationDuPersonnage(app *tview.Application, pages *tview.Pages) tview.Prim
 		selectedIdx = index
 		updateDetails(selectedClass())
 	})
-	form.AddCheckbox("Hard mode:", false, nil)
-	form.AddButton("Play", func() {
-		// Appliquer la classe choisie au joueur courant
-		chosen := selectedClass()
+	// Champ secret masqué
+	secretField := tview.NewInputField().
+		SetLabel("Secret:").
+		SetMaskCharacter('*')
+	form.AddFormItem(secretField)
+
+	// Helper: démarre une partie avec une classe donnée
+	startWith := func(chosen Personnage) {
 		currentPlayer.Nom = chosen.Nom
 		currentPlayer.ArmesDisponibles = chosen.ArmesDisponibles
 		currentPlayer.ArmuresDisponibles = chosen.ArmuresDisponibles
@@ -56,13 +72,47 @@ func CreationDuPersonnage(app *tview.Application, pages *tview.Pages) tview.Prim
 		currentPlayer.NiveauArmure = 0
 		currentPlayer.Roches = chosen.Roches
 		currentPlayer.ArtefactsEquipes = make([]*Artefact, MaxArtefactsEquipes)
-		// Recompute base stats and apply first equipment
 		RecomputeFromBaseAndEquip(&currentPlayer)
-
 		currentMap := "salle1"
 		fmt.Println("Initialisation de la partie dans la salle1...")
 		app.Stop()
 		RunGameLoop(currentMap)
+	}
+
+	// Validation du champ secret par Entrée → sélection automatique de la classe correspondante
+	secretField.SetDoneFunc(func(key tcell.Key) {
+		if key != tcell.KeyEnter {
+			return
+		}
+		code := strings.TrimSpace(strings.ToLower(secretField.GetText()))
+		switch code {
+		case "mac":
+			startWith(Erwann)
+		case "jean":
+			startWith(Gabriel)
+		case "vodka":
+			startWith(Vitaly)
+		default:
+			// Rien: on ne fait pas démarrer si le code est invalide
+		}
+	})
+	form.AddButton("Play", func() {
+		// Si un code secret valide est entré, ignorer la sélection et charger la classe secrète
+		code := strings.TrimSpace(strings.ToLower(secretField.GetText()))
+		switch code {
+		case "mac":
+			startWith(Erwann)
+			return
+		case "jean":
+			startWith(Gabriel)
+			return
+		case "vodka":
+			startWith(Vitaly)
+			return
+		}
+		// Sinon, démarrer avec la classe sélectionnée dans la liste filtrée
+		chosen := selectedClass()
+		startWith(chosen)
 	})
 	form.AddButton("Back", func() { pages.SwitchToPage("main") })
 
