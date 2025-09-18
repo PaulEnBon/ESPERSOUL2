@@ -557,6 +557,105 @@ var antidote = Arme{
 	},
 }
 
+// --- Armes d'Erwann (thème informatique) ---
+var macMini = Arme{
+	Nom: "Mac Mini", DegatsPhysiques: 15, DegatsMagiques: 10, Precision: 0.82, TauxCritique: 0.10, Durabilite: 80,
+	Competences: []Competence{
+		{Nom: "Compilation Rapide", Description: "Petit burst de calcul.", Degats: 18, CoutMana: 3, Type: "magique"},
+	},
+}
+
+var macAir = Arme{
+	Nom: "Mac Air", DegatsPhysiques: 20, DegatsMagiques: 18, Precision: 0.85, TauxCritique: 0.15, Durabilite: 90,
+	Competences: []Competence{
+		{Nom: "Ventilation Silencieuse", Description: "Réduit légèrement la précision ennemie.", Degats: 0, CoutMana: 5, Type: "magique", TypeEffet: "Nébulation", Puissance: 1},
+		{Nom: "Process M1", Description: "Cycle optimisé.", Degats: 25, CoutMana: 4, Type: "magique"},
+	},
+}
+
+var macPro = Arme{
+	Nom: "Mac Pro", DegatsPhysiques: 28, DegatsMagiques: 35, Precision: 0.88, TauxCritique: 0.22, Durabilite: 110,
+	Competences: []Competence{
+		{Nom: "Rendu 3D", Description: "Charge CPU massive.", Degats: 40, CoutMana: 6, Type: "magique"},
+		{Nom: "Kernel Panic", Description: "Perturbe l'ennemi (précision -).", Degats: 0, CoutMana: 7, Type: "magique", TypeEffet: "Nébulation", Puissance: 2},
+	},
+}
+
+var pcDuCDI = Arme{
+	Nom: "PC du CDI", DegatsPhysiques: 40, DegatsMagiques: 55, Precision: 0.90, TauxCritique: 0.30, Durabilite: 140,
+	Competences: []Competence{
+		{Nom: "Ecran Bleu", Description: "Gèle net l'initiative adverse (étourdissement).", Degats: 0, CoutMana: 10, Type: "magique", TypeEffet: "Étourdissement", Puissance: 3},
+		{Nom: "Torrent Interdit", Description: "Déluge de paquets.", Degats: 60, CoutMana: 8, Type: "magique"},
+	},
+}
+
+// --- Armes de Gabriel (thème céleste / jugement) ---
+var vergeCeleste = Arme{
+	Nom: "Verge Céleste", DegatsPhysiques: 35, DegatsMagiques: 20, Precision: 0.88, TauxCritique: 0.20, Durabilite: 120,
+	Competences: []Competence{
+		{Nom: "Frappe Lumineuse", Description: "Coup de base sanctifié.", Degats: 32, CoutMana: 0, Type: "physique"},
+		{Nom: "Marque Sacrée", Description: "Affaiblit la cible.", Degats: 18, CoutMana: 4, Type: "magique", TypeEffet: "Affaiblissement", Puissance: 2},
+	},
+}
+
+var lanceArchange = Arme{
+	Nom: "Lance de l'Archange", DegatsPhysiques: 50, DegatsMagiques: 40, Precision: 0.90, TauxCritique: 0.25, Durabilite: 140,
+	Competences: []Competence{
+		{Nom: "Perçée Divine", Description: "Brise fortement l'armure.", Degats: 55, CoutMana: 0, Type: "physique", TypeEffet: "Brise-Armure", Puissance: 3},
+		{Nom: "Châtiment", Description: "Inflige des dégâts sacrés.", Degats: 48, CoutMana: 6, Type: "magique"},
+	},
+}
+
+var trompeteJugement = Arme{
+	Nom: "Trompette du Jugement", DegatsPhysiques: 20, DegatsMagiques: 95, Precision: 0.92, TauxCritique: 0.35, Durabilite: 160,
+	Competences: []Competence{
+		{Nom: "Onde Sacrée", Description: "Réduit la résistance magique.", Degats: 60, CoutMana: 8, Type: "magique", TypeEffet: "Brise-Armure Magique", Puissance: 3},
+		{Nom: "Résonance Céleste", Description: "Diminue la précision ennemie.", Degats: 0, CoutMana: 8, Type: "magique", TypeEffet: "Nébulation", Puissance: 3},
+	},
+}
+
+var glaiveApocalypse = Arme{
+	Nom: "Glaive de l'Apocalypse", DegatsPhysiques: 85, DegatsMagiques: 120, Precision: 0.95, TauxCritique: 0.50, Durabilite: 220,
+	Competences: []Competence{
+		{Nom: "Sentence Finale", Description: "Annihile l'armure.", Degats: 90, CoutMana: 10, Type: "physique", TypeEffet: "Brise-Armure", Puissance: 5},
+		{Nom: "Chœur des Cieux", Description: "Désintègre la résistance magique.", Degats: 110, CoutMana: 12, Type: "magique", TypeEffet: "Brise-Armure Magique", Puissance: 5},
+		{Nom: "Jugement Dernier", Description: "Saignement apocalyptique.", Degats: 70, CoutMana: 10, Type: "physique", TypeEffet: "Saignement", Puissance: 5},
+	},
+}
+
+// --- Armes de Vitaly (thème vodka / force sauvage) ---
+var flashDeVodka = Arme{
+	Nom: "Flash de Vodka", DegatsPhysiques: 15, DegatsMagiques: 5, Precision: 0.95, TauxCritique: 0.30, Durabilite: 80,
+	Competences: []Competence{
+		{Nom: "Gorgée Brûlante", Description: "Petit choc alcoolisé (brûlure légère).", Degats: 12, CoutMana: 2, Type: "magique", TypeEffet: "Brûlure", Puissance: 1},
+	},
+}
+
+var bouteilleDeVodka = Arme{
+	Nom: "Bouteille de Vodka", DegatsPhysiques: 30, DegatsMagiques: 10, Precision: 0.97, TauxCritique: 0.45, Durabilite: 110,
+	Competences: []Competence{
+		{Nom: "Coup de Bouteille", Description: "Brise légèrement l'armure.", Degats: 28, CoutMana: 0, Type: "physique", TypeEffet: "Brise-Armure", Puissance: 1},
+		{Nom: "Jet Enflammé", Description: "Brûlure modérée.", Degats: 18, CoutMana: 4, Type: "magique", TypeEffet: "Brûlure", Puissance: 2},
+	},
+}
+
+var griffeDOurs = Arme{
+	Nom: "Griffe d'Ours", DegatsPhysiques: 55, DegatsMagiques: 15, Precision: 0.98, TauxCritique: 0.55, Durabilite: 150,
+	Competences: []Competence{
+		{Nom: "Déchirure", Description: "Saignement sévère.", Degats: 40, CoutMana: 5, Type: "physique", TypeEffet: "Saignement", Puissance: 4},
+		{Nom: "Rugissement Glacial", Description: "Réduit la précision ennemie.", Degats: 0, CoutMana: 6, Type: "magique", TypeEffet: "Nébulation", Puissance: 3},
+	},
+}
+
+var apocalypseVodka = Arme{
+	Nom: "Apocalypse Vodka", DegatsPhysiques: 95, DegatsMagiques: 80, Precision: 0.99, TauxCritique: 0.70, Durabilite: 240,
+	Competences: []Competence{
+		{Nom: "Explosion Alcoolisée", Description: "Dégâts massifs et brûlure.", Degats: 120, CoutMana: 12, Type: "magique", TypeEffet: "Brûlure", Puissance: 5},
+		{Nom: "Morsure de l'Hiver", Description: "Affaiblit l'ennemi et réduit sa précision.", Degats: 30, CoutMana: 8, Type: "magique", TypeEffet: "Défavorisation", Puissance: 4},
+		{Nom: "Éclats de Verre", Description: "Brise fortement l'armure.", Degats: 60, CoutMana: 6, Type: "physique", TypeEffet: "Brise-Armure", Puissance: 4},
+	},
+}
+
 // Potion spéciale — régénère toute la vie mais pénalise la précision
 var vodkaDeVitaly = Arme{
 	Nom:             "Vodka de Vitaly",

@@ -11,6 +11,48 @@ import (
 	"github.com/eiannone/keyboard"
 )
 
+// Séquence cheat: UP UP DOWN DOWN A B A B
+var cheatSequence = []string{"up", "up", "down", "down", "a", "b", "a", "b"}
+var cheatProgress int
+
+// Traite un événement clavier pour la séquence; retourne true si séquence complétée
+func processCheatSequence(e keyboard.KeyEvent) bool {
+	// Normaliser entrée
+	key := ""
+	if e.Key == keyboard.KeyArrowUp {
+		key = "up"
+	} else if e.Key == keyboard.KeyArrowDown {
+		key = "down"
+	} else if e.Rune == 'a' || e.Rune == 'A' {
+		key = "a"
+	} else if e.Rune == 'b' || e.Rune == 'B' {
+		key = "b"
+	} else {
+		// Toute autre touche reset partiel si pas vide
+		if cheatProgress != 0 {
+			cheatProgress = 0
+		}
+		return false
+	}
+
+	// Vérifier progression
+	if key == cheatSequence[cheatProgress] {
+		cheatProgress++
+		if cheatProgress == len(cheatSequence) {
+			cheatProgress = 0
+			return true
+		}
+	} else {
+		// Reset si la touche ne correspond pas
+		cheatProgress = 0
+		// Re-vérifier si cette touche est le début potentiel
+		if key == cheatSequence[0] {
+			cheatProgress = 1
+		}
+	}
+	return false
+}
+
 // Note: Since Go 1.20, the global RNG is automatically seeded; no need to seed manually.
 
 // Map globale des salles (à importer depuis votre fichier maps.go existant)
@@ -472,6 +514,11 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 					reward := 50 + (cfg.level-1)*25
 					addToInventory("pièces", reward)
 					addHUDMessage(fmt.Sprintf("💰 Vous gagnez %d pièces !", reward))
+					// Drop spécial boss final salle15
+					if currentMap == "salle15" && cfg.level == 4 {
+						addToInventory("sida", 1)
+						addHUDMessage("🧬 Vous obtenez l'objet mystérieux 'sida'. Apportez-le au PNJ de la salle1...")
+					}
 				}
 			}
 		}
@@ -685,6 +732,15 @@ func getPlayerMovement(events <-chan keyboard.KeyEvent, px, py int) (int, int, b
 	}
 
 	input := strings.ToLower(string(e.Rune))
+
+	// Ouverture via séquence (UP UP DOWN DOWN A B A B)
+	if debugMode {
+		if processCheatSequence(e) {
+			showCheatMenu(&currentMapGlobalRef, &mapDataGlobalRef)
+			applyEnemyStates(mapDataGlobalRef, currentMapGlobalRef)
+			return px, py, true
+		}
+	}
 	key := e.Key
 
 	newX, newY := px, py
@@ -722,12 +778,43 @@ func isValidMovement(x, y int, mapData [][]int) bool {
 }
 
 // Boucle principale du jeu refactorisée
+// Références globales temporaires nécessaires à l'appel cheat depuis getPlayerMovement
+var currentMapGlobalRef string
+var mapDataGlobalRef [][]int
 
 func RunGameLoop(currentMap string) {
 	// reader removed: using keyboard events for movement
 	mapData := copyMap(salles[currentMap])
-	currentMapDisplayName = currentMap
-	assignEnemyEmojis(currentMap, mapData)
+
+	// Auto-équipe la Lunette d'Erwann si la classe est Erwann
+	if currentPlayer.Nom == "Erwann" {
+		if !PossedeArtefact(&currentPlayer, "Lunette d'Erwann") {
+			if a, ok := GetArtefactParNom("Lunette d'Erwann"); ok {
+				EquiperArtefactDansSlot(&currentPlayer, a, 0)
+				addHUDMessage("🎯 Lunette d'Erwann équipée automatiquement.")
+			}
+		}
+	}
+
+	// Auto-équipe le Halo de Gabriel si la classe est Gabriel
+	if currentPlayer.Nom == "Gabriel" {
+		if !PossedeArtefact(&currentPlayer, "Halo de Gabriel") {
+			if a, ok := GetArtefactParNom("Halo de Gabriel"); ok {
+				EquiperArtefactDansSlot(&currentPlayer, a, 0)
+				addHUDMessage("✨ Halo de Gabriel équipé automatiquement.")
+			}
+		}
+	}
+
+	// Auto-équipe la Vodka de Vitaly si la classe est Vitaly
+	if currentPlayer.Nom == "Vitaly" {
+		if !PossedeArtefact(&currentPlayer, "Vodka de Vitaly") {
+			if a, ok := GetArtefactParNom("Vodka de Vitaly"); ok {
+				EquiperArtefactDansSlot(&currentPlayer, a, 0)
+				addHUDMessage("🍾 Vodka de Vitaly équipée automatiquement.")
+			}
+		}
+	}
 
 	// Ouvrir une fois le clavier et récupérer un canal d'événements pour tout le loop
 	if err := keyboard.Open(); err != nil {
@@ -751,6 +838,10 @@ func RunGameLoop(currentMap string) {
 		placePlayerAt(mapData, len(mapData[0])/2, len(mapData)/2)
 	}
 
+	// Met à jour les références globales utilisées par getPlayerMovement pour le cheat menu
+	currentMapGlobalRef = currentMap
+	mapDataGlobalRef = mapData
+
 	for {
 		assignEnemyEmojis(currentMap, mapData)
 		printMap(mapData) // Le HUD est maintenant intégré dans printMap
@@ -762,7 +853,9 @@ func RunGameLoop(currentMap string) {
 			return
 		}
 
-		// Utiliser la nouvelle fonction de mouvement (lecture instantanée via canal)
+		// (Hook cheat déplacé dans getPlayerMovement)
+
+		// Utiliser la nouvelle fonction de mouvement (lecture instantanée via canal) si pas déjà traité
 		newX, newY, shouldContinue := getPlayerMovement(events, px, py)
 
 		if !shouldContinue {
@@ -800,6 +893,8 @@ func RunGameLoop(currentMap string) {
 			currentMapDisplayName = currentMap
 			assignEnemyEmojis(currentMap, mapData)
 			applyEnemyStates(mapData, currentMap)
+			currentMapGlobalRef = currentMap
+			mapDataGlobalRef = mapData
 
 			// Placer le joueur selon la transition
 			if currentMap == "salle8" {
@@ -813,6 +908,8 @@ func RunGameLoop(currentMap string) {
 				// Position par défaut
 				placePlayerAt(mapData, len(mapData[0])/2, len(mapData)/2)
 			}
+			currentMapGlobalRef = currentMap
+			mapDataGlobalRef = mapData
 		}
 	}
 }

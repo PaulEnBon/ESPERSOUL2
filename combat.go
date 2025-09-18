@@ -492,6 +492,27 @@ func combat(currentMap string, isSuper bool) interface{} {
 	player := buildPlayerCharacter()
 	enemy := CreateRandomEnemyForMap(currentMap, isSuper)
 
+	// Boss final personnalisé pour salle15
+	if currentMap == "salle15" {
+		// Définition explicite du boss final (ignorer le scaling générique ensuite)
+		custom := Personnage{
+			Nom:                "Mia Khalifa",
+			PV:                 69,
+			PVMax:              69,
+			Armure:             69,
+			ResistMag:          69,
+			Precision:          0.90,
+			TauxCritique:       0.69,
+			MultiplicateurCrit: 1.8,
+		}
+		// Équipe l'arme foutre de Zeus
+		_ = EquiperArme(&custom, foutreDeZeus)
+		// Ajuste les dégâts pour refléter "69 attaque"
+		custom.ArmeEquipee.DegatsPhysiques = 69
+		custom.ArmeEquipee.DegatsMagiques = 69
+		enemy = custom
+	}
+
 	// Scaling supplémentaire pour salles boss progressives
 	levelMultiplier := 1.0
 	switch currentMap {
@@ -502,7 +523,8 @@ func combat(currentMap string, isSuper bool) interface{} {
 	case "salle14":
 		levelMultiplier = 1.9 // Niveau 3/4
 	case "salle15":
-		levelMultiplier = 2.4 // Niveau 4/4
+		// Pas de scaling : boss déjà défini avec ses stats personnalisées
+		levelMultiplier = 1.0
 	}
 	if levelMultiplier > 1.0 {
 		enemy.PV = int(float64(enemy.PV) * levelMultiplier)

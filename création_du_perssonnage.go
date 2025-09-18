@@ -6,8 +6,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-// This function now returns the layout instead of running a new app.
-func Création_du_perssonnage(pages *tview.Pages) tview.Primitive {
+func CreationDuPersonnage(app *tview.Application, pages *tview.Pages) tview.Primitive {
 	photoPlaceholder := tview.NewTextView().
 		SetText("kitten icat image.jpeg").
 		SetTextAlign(tview.AlignCenter).
@@ -27,15 +26,10 @@ func Création_du_perssonnage(pages *tview.Pages) tview.Primitive {
 		AddButton("Play", func() {
 			currentMap := "salle1"
 			fmt.Println("Initialisation de la partie dans la salle1...")
-
-			// Lancement du jeu
-			RunGameLoop(currentMap)
-
-			// Switch to the game page (adjust the page name if needed)
-			pages.SwitchToPage("RunGameLoop")
+			app.Stop()              // stop tview
+			RunGameLoop(currentMap) // start your console loop
 		}).
 		AddButton("Back", func() {
-			// Go back to main menu
 			pages.SwitchToPage("main")
 		})
 
