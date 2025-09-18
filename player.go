@@ -52,8 +52,21 @@ func showInventory() {
 	fmt.Printf("🗝️  Clés spéciales: %d\n", playerInventory["clés_spéciales"])
 	fmt.Printf("💰 Pièces: %d\n", playerInventory["pièces"])
 	fmt.Printf("🪨 Roches d'évolution: %d\n", currentPlayer.Roches)
-	fmt.Printf("🧪 Potions: %d\n", playerInventory["potions"])
+	// Consommables
+	fmt.Printf("   Potion mineure:      %d\n", playerInventory["potion_mineure"])
+	fmt.Printf("   Potion majeure:      %d\n", playerInventory["potion_majeure"])
+	fmt.Printf("   Potion suprême:      %d\n", playerInventory["potion_supreme"])
+	fmt.Printf("   Antidote:            %d\n", playerInventory["antidote"])
+	fmt.Printf("   Potion de dégâts:    %d\n", playerInventory["potion_degats"])
+	fmt.Printf("   Bombe incendiaire:   %d\n", playerInventory["bombe_incendiaire"])
+	fmt.Printf("   Bombe givrante:      %d\n", playerInventory["bombe_givrante"])
+	fmt.Printf("   Grenade fumigène:    %d\n", playerInventory["grenade_fumigene"])
+	fmt.Printf("   Parchemin dispersion:%d\n", playerInventory["parchemin_dispersion"])
+	fmt.Printf("   Élixir de force:     %d\n", playerInventory["elixir_force"])
+	fmt.Printf("   Élixir de vitesse:   %d\n", playerInventory["elixir_vitesse"])
+	fmt.Printf("   Élixir de précision: %d\n", playerInventory["elixir_critique"])
 	fmt.Printf("💊 Puff 9K: %d\n", playerInventory["puff_9k"])
+	fmt.Printf("🍶 Vodka de Vitaly: %d\n", playerInventory["vodka_vitaly"])
 	// Affiche les artefacts équipés
 	artefacts := []string{}
 	for _, a := range currentPlayer.ArtefactsEquipes {

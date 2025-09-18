@@ -26,8 +26,13 @@ type Personnage struct {
 	Roches             int // Ressource utilisée pour améliorer
 	ArmeEquipee        Arme
 	ArmureEquipee      Armure
-	ArtefactsEquipes   [2]*Artefact
+	// ArtefactsEquipes devient un slice (taille max dynamique gérée par constante) pour simplifier l'évolution
+	ArtefactsEquipes  []*Artefact // slots équipés (max 2 actuellement)
+	ArtefactsPossedes []Artefact  // inventaire des artefacts possédés (illimité)
 }
+
+// Nombre maximum d'artefacts pouvant être équipés simultanément
+const MaxArtefactsEquipes = 2
 
 // ==========================
 // LIGNÉE DES ÉPÉES
@@ -67,6 +72,7 @@ var CRS = Personnage{
 		matraqueTelescopique,
 	},
 	ArmuresDisponibles: ArmuresCRS,
+	ArtefactsEquipes:   make([]*Artefact, MaxArtefactsEquipes),
 }
 
 // ==========================
@@ -88,6 +94,7 @@ var Pyromane = Personnage{
 		volcanDeMagma,
 	},
 	ArmuresDisponibles: ArmuresPyromane,
+	ArtefactsEquipes:   make([]*Artefact, MaxArtefactsEquipes),
 }
 
 // ==========================
@@ -109,6 +116,7 @@ var RobinDesBois = Personnage{
 		arbaleteVenimeuse,
 	},
 	ArmuresDisponibles: ArmuresRobin,
+	ArtefactsEquipes:   make([]*Artefact, MaxArtefactsEquipes),
 }
 
 // ==========================
@@ -130,6 +138,7 @@ var Boucher = Personnage{
 		hacheDeGuerre,
 	},
 	ArmuresDisponibles: ArmuresBoucher,
+	ArtefactsEquipes:   make([]*Artefact, MaxArtefactsEquipes),
 }
 
 // ==========================
@@ -151,6 +160,7 @@ var CroMagnon = Personnage{
 		lanceMammouth,
 	},
 	ArmuresDisponibles: ArmuresCroMagnon,
+	ArtefactsEquipes:   make([]*Artefact, MaxArtefactsEquipes),
 }
 
 // ==========================
@@ -173,6 +183,7 @@ var Zeus = Personnage{
 		foutreDeZeus,
 	},
 	ArmuresDisponibles: ArmuresZeus,
+	ArtefactsEquipes:   make([]*Artefact, MaxArtefactsEquipes),
 }
 
 // ==========================
@@ -194,6 +205,7 @@ var Samourai = Personnage{
 		katanaLameCeleste,
 	},
 	ArmuresDisponibles: ArmuresSamourai,
+	ArtefactsEquipes:   make([]*Artefact, MaxArtefactsEquipes),
 }
 
 // ==========================
@@ -215,6 +227,7 @@ var Gandalf = Personnage{
 		batonGrandMage,
 	},
 	ArmuresDisponibles: ArmuresGandalf,
+	ArtefactsEquipes:   make([]*Artefact, MaxArtefactsEquipes),
 }
 
 // ==========================
@@ -237,6 +250,7 @@ var Singe = Personnage{
 		bananeDivine,
 	},
 	ArmuresDisponibles: ArmuresSinge,
+	ArtefactsEquipes:   make([]*Artefact, MaxArtefactsEquipes),
 }
 
 // ==========================
@@ -259,6 +273,7 @@ var Bambi = Personnage{
 		scarEnOr,
 	},
 	ArmuresDisponibles: ArmuresBambi,
+	ArtefactsEquipes:   make([]*Artefact, MaxArtefactsEquipes),
 }
 
 // ==========================
@@ -280,4 +295,5 @@ var Poseidon = Personnage{
 		tridentPoseidon,
 	},
 	ArmuresDisponibles: ArmuresPoseidon,
+	ArtefactsEquipes:   make([]*Artefact, MaxArtefactsEquipes),
 }

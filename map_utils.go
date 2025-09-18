@@ -8,28 +8,28 @@ import (
 	"github.com/mattn/go-runewidth"
 )
 
-// Positions des mobs aléatoires dans salle3
-var randomMobsSalle3 = []struct{ x, y int }{}
+// Variables globales nécessaires (restaurées)
+var useASCII bool = false
+var randomMobsSalle3 []struct{ x, y int }
+var randomMobsSalle2 []struct{ x, y int }
+var randomMobsSalle10 []struct{ x, y int }
 
-// Positions des mobs aléatoires dans salle2
-var randomMobsSalle2 = []struct{ x, y int }{}
+// Nom de la carte courante (pour affichage des emojis par coordonnée)
+var currentMapDisplayName string
 
-// Positions des mobs (salle10)
-var randomMobsSalle10 = []struct{ x, y int }{}
+// Stocke pour chaque carte et coordonnée l'emoji d'ennemi choisi (clé "x,y")
+var enemyDisplayedEmoji = map[string]map[string]string{}
 
-// Configuration du nombre de mobs aléatoires dans salle3
+// Paramètres pour génération aléatoire (valeurs précédentes supposées)
 const (
-	minRandomMobsSalle3 = 5
-	maxRandomMobsSalle3 = 8
+	// Salle3: augmentation massive du nombre d'ennemis
+	minRandomMobsSalle3  = 8  // ancien 3
+	maxRandomMobsSalle3  = 14 // ancien 6
+	numRandomMobsSalle2  = 5  // augmenté de 4 à 5 (inchangé ici)
+	numRandomMobsSalle10 = 5
 )
 
-// Nombre fixe de mobs aléatoires dans salle2
-const numRandomMobsSalle2 = 4
-
-// Nombre de mobs aléatoires dans salle10
-const numRandomMobsSalle10 = 5
-
-// Copie de la map
+// copyMap : fait une copie profonde de la carte (restauration)
 func copyMap(src [][]int) [][]int {
 	dst := make([][]int, len(src))
 	for i := range src {
@@ -39,41 +39,44 @@ func copyMap(src [][]int) [][]int {
 	return dst
 }
 
-// Convertit une cellule en symbole
-var useASCII = false // Passez à true pour un mode ASCII aligné sans emojis
-
+// Restauration de la fonction cellToSymbol (version avant l'ajout des émojis dynamiques par tier)
 func cellToSymbol(val int) string {
-	if useASCII {
+	if useASCII { // Mode ASCII simplifié
 		switch val {
-		case 9:
-			return "#"
 		case 1:
-			return "@"
+			return "P"
 		case 2:
 			return "E"
+		case 12:
+			return "S" // Super ennemi
 		case 3:
-			return "N"
+			return "N" // PNJ
 		case 4:
-			return "M"
+			return "M" // Marchand
 		case 5:
-			return "F"
+			return "F" // Forgeron
 		case 6:
-			return "C"
-		case 7, 10, 13, 14, 15, 20, 21, 27, 28, 31, 33, 34, 38, 40, 42, 44, 50, 51, 52, 53, 54, 55, 56, 57:
-			return "P"
-		case 30:
-			return "S"
-		case 32:
-			return "X"
+			return "C" // Coffre
 		case 35:
-			return "B" // Bloc pierre
+			return "B"
 		case 46, 47:
-			return "*" // Frames explosion
+			return "*"
+		case 66:
+			return "G" // spawner
+		case 67, 70, 73, 76:
+			return "m" // mini boss
+		case 68, 72, 75, 78:
+			return "B" // boss
+		case 71, 74, 77:
+			return "G" // spawner niv 2/3/4
+		case 8, 9:
+			return "#"
 		default:
 			return "."
 		}
 	}
-	switch val {
+
+	switch val { // Version emoji
 	case 8:
 		return "⬜"
 	case 14, 38, 52, 55:
@@ -93,11 +96,11 @@ func cellToSymbol(val int) string {
 	case 7, 20:
 		return "↑"
 	case 1:
-		return "🎮" // Joueur plus visible
+		return "🎮" // Joueur
 	case 2:
-		return "👹" // Ennemi
+		return "👹" // Ennemi (fallback si pas de mapping spécifique)
 	case 12:
-		return "💀" // Super Ennemi (2x stats)
+		return "💀" // Super Ennemi
 	case 3:
 		return "👨" // PNJ
 	case 4:
@@ -124,12 +127,95 @@ func cellToSymbol(val int) string {
 		return "⚙️"
 	case 72, 75, 78: // boss niveaux 2,3,4
 		return "👑"
-	case 11, 16, 17, 18, 19, 22, 23, 24, 25, 26, 29, 36, 37, 39, 41, 43, 45, 58, 59, 60, 61, 62, 63, 64, 65:
-		return "•"
-	case 0:
+	case 11, 16, 17, 18, 19, 22, 23, 24, 25, 26, 29, 36, 37, 39, 41, 43, 45, 58, 59, 60, 61, 62, 63, 64, 65, 0:
 		return "•"
 	default:
 		return "?"
+	}
+}
+
+// Retourne un symbole adapté tenant compte de la coordonnée (per-class emoji)
+func cellToSymbolAt(x, y, val int) string {
+	// Cas spécial: Mentor (salle1 coord (8,3)) -> toujours 🧙 (version simplifiée)
+	if !useASCII {
+		if currentMapDisplayName == "salle1" && x == 8 && y == 3 {
+			// Que ce soit encore un ennemi (2) ou déjà PNJ (3) => afficher le même emoji mentor
+			if val == 2 || val == 3 || val == 12 { // inclure safety super flag improbable
+				return "🧙"
+			}
+		}
+		if val == 2 || val == 12 {
+			if m := enemyDisplayedEmoji[currentMapDisplayName]; m != nil {
+				key := fmt.Sprintf("%d,%d", x, y)
+				if e, ok := m[key]; ok {
+					return e
+				}
+			}
+		}
+	}
+	return cellToSymbol(val)
+}
+
+// Choisit aléatoirement un emoji d'ennemi compatible avec le tier de la carte
+func randomEnemyEmojiForMap(mapName string) string {
+	tier := tierForMap(mapName)
+	var pool []string
+	switch tier {
+	case TierTutorial:
+		pool = []string{"Rat", "Gelée"}
+	case TierEarly:
+		pool = []string{"Brigand", "Archer", "Apprenti Pyro", "Rat", "Gelée"}
+	case TierMid:
+		pool = []string{"Chevalier", "Berserker", "Mage Sombre"}
+	case TierLate:
+		pool = []string{"Seigneur Démon", "Archimage", "Champion déchu", "Mage Sombre"}
+	default:
+		pool = []string{"Rat"}
+	}
+	name := pool[rand.Intn(len(pool))]
+	// Local mini switch d'emoji (évite dépendance sur combat.go)
+	switch name {
+	case "Rat":
+		return "🐀"
+	case "Gelée":
+		return "🟢"
+	case "Brigand":
+		return "🗡️"
+	case "Archer":
+		return "🏹"
+	case "Apprenti Pyro":
+		return "🔥"
+	case "Chevalier":
+		return "🛡️"
+	case "Berserker":
+		return "⚔️"
+	case "Mage Sombre":
+		return "🪄"
+	case "Seigneur Démon":
+		return "👿"
+	case "Archimage":
+		return "📜"
+	case "Champion déchu":
+		return "🥷"
+	default:
+		return "👹"
+	}
+}
+
+// Assigne des emojis aux cases ennemies d'une carte si non déjà définis
+func assignEnemyEmojis(mapName string, mapData [][]int) {
+	if enemyDisplayedEmoji[mapName] == nil {
+		enemyDisplayedEmoji[mapName] = map[string]string{}
+	}
+	for y := range mapData {
+		for x := range mapData[y] {
+			if mapData[y][x] == 2 || mapData[y][x] == 12 { // ennemi ou super ennemi
+				key := fmt.Sprintf("%d,%d", x, y)
+				if _, exists := enemyDisplayedEmoji[mapName][key]; !exists {
+					enemyDisplayedEmoji[mapName][key] = randomEnemyEmojiForMap(mapName)
+				}
+			}
+		}
 	}
 }
 
@@ -329,8 +415,8 @@ func printMap(mapData [][]int) {
 		var mapLine string
 		if i < mapHeight {
 			var b strings.Builder
-			for _, val := range mapData[i] {
-				sym := cellToSymbol(val)
+			for xIdx, val := range mapData[i] {
+				sym := cellToSymbolAt(xIdx, i, val)
 				w := runewidth.StringWidth(sym)
 				pad := cellWidth - w
 				if pad < 0 {

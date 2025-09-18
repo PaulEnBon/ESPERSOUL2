@@ -3,6 +3,8 @@ package main
 import (
 	"math"
 	"math/rand"
+	"regexp"
+	"strconv"
 )
 
 // Système d'ennemis par paliers (tutoriel / early / mid / late)
@@ -250,23 +252,68 @@ var midPool = []EnemyTemplate{MidChevalier, MidBerserker, MidMage}
 var latePool = []EnemyTemplate{LateSeigneurDemon, LateArchimage, LateChampion}
 
 // Détermine le tier d'une salle
+// parseSalleNumber extrait le numéro de salle depuis un nom de map (ex: "salle12_boss" -> 12)
+var salleNumRegex = regexp.MustCompile(`salle(\d+)`)
+
+func parseSalleNumber(mapName string) int {
+	m := salleNumRegex.FindStringSubmatch(mapName)
+	if len(m) >= 2 {
+		if v, err := strconv.Atoi(m[1]); err == nil {
+			return v
+		}
+	}
+	return -1
+}
+
+// Nouveau découpage des tiers par numéro de salle:
+// 1-2 : Tutoriel
+// 3-4 : Early
+// 5-7 : Mid
+// 8-11 : Late
+// 12+ : Late (boss / contenu avancé)
 func tierForMap(mapName string) EnemyTier {
-	switch mapName {
-	case "salle1":
-		return TierTutorial
-	case "salle2", "salle3":
+	n := parseSalleNumber(mapName)
+	if n == -1 { // fallback pour noms non standards
 		return TierEarly
-	case "salle4", "salle5", "salle6", "salle7":
+	}
+	switch {
+	case n <= 2:
+		return TierTutorial
+	case n <= 4:
+		return TierEarly
+	case n <= 7:
 		return TierMid
-	case "salle8", "salle9", "salle10":
+	case n <= 11:
 		return TierLate
 	default:
-		return TierEarly
+		return TierLate
 	}
 }
 
 // Renvoie un ennemi aléatoire pour une salle donnée
 func CreateRandomEnemyForMap(mapName string, isSuper bool) Personnage {
+	// Ennemi / Mentor spécial exclusif à la salle1
+	if mapName == "salle1" {
+		// Forme ennemie: "Mentor Maudit" -> deviendra PNJ "Mentor Suprême" après victoire
+		special := EnemyTemplate{
+			Name: "Mentor Maudit",
+			Base: Personnage{
+				Nom:                "Mentor Maudit",
+				PV:                 18,
+				PVMax:              18,
+				Armure:             2,
+				ResistMag:          1,
+				Precision:          0.72,
+				TauxCritique:       0.03,
+				MultiplicateurCrit: 1.35,
+			},
+			Weapon: Arme{Nom: "Bâton Fissuré", DegatsPhysiques: 3, DegatsMagiques: 5, Precision: 0.08, TauxCritique: 0.02, Durabilite: 0, Competences: []Competence{
+				{Nom: "Étincelle", Description: "Petite décharge magique", Degats: 6, CoutMana: 0, Type: "magique", TypeEffet: "", Puissance: 0},
+			}},
+			Armor: Armure{Nom: "Tunique Rapiécée", Defense: 0, Resistance: 0, HP: 0},
+		}
+		return NewEnemyFromTemplate(special, false)
+	}
 	tier := tierForMap(mapName)
 	switch tier {
 	case TierTutorial:

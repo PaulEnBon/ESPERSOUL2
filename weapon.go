@@ -556,3 +556,24 @@ var antidote = Arme{
 		},
 	},
 }
+
+// Potion spéciale — régénère toute la vie mais pénalise la précision
+var vodkaDeVitaly = Arme{
+	Nom:             "Vodka de Vitaly",
+	DegatsPhysiques: 0,
+	DegatsMagiques:  0,
+	Precision:       1.0,
+	TauxCritique:    0.0,
+	Durabilite:      1,
+	Competences: []Competence{
+		{
+			Nom:         "Coup de Fouet",
+			Description: "Régénère toute la vie mais trouble la vision (-30% précision pendant 3 tours).",
+			Degats:      0,
+			CoutMana:    0,
+			Type:        "magique",
+			TypeEffet:   "Ivresse",
+			Puissance:   0,
+		},
+	},
+}

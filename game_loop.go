@@ -269,7 +269,7 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 					addToInventory("pioche", 1)
 					addHUDMessage("🪓 Vous obtenez une PIÔCHE ! Elle peut briser la pierre sacrée (๑).")
 				}
-				addHUDMessage("🤝 La créature retrouve sa forme humaine et devient un PNJ amical !")
+				addHUDMessage("🤝 Le Mentor Maudit est libéré : il devient le Mentor Suprême !")
 				showDialogue(currentMap, newX, newY)
 			} else {
 				enemiesDefeated[currentMap][enemyKey] = true
@@ -294,7 +294,7 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 					addToInventory("pioche", 1)
 					addHUDMessage("🪓 Vous obtenez une PIÔCHE ! Elle peut briser la pierre sacrée (๑).")
 				}
-				addHUDMessage("🤝 La créature retrouve sa forme humaine et devient un PNJ amical !")
+				addHUDMessage("🤝 Le Mentor Maudit est libéré : il devient le Mentor Suprême !")
 				showDialogue(currentMap, newX, newY)
 			} else {
 				// Tous les autres mobs ne se transforment plus jamais
@@ -722,9 +722,12 @@ func isValidMovement(x, y int, mapData [][]int) bool {
 }
 
 // Boucle principale du jeu refactorisée
+
 func RunGameLoop(currentMap string) {
 	// reader removed: using keyboard events for movement
 	mapData := copyMap(salles[currentMap])
+	currentMapDisplayName = currentMap
+	assignEnemyEmojis(currentMap, mapData)
 
 	// Ouvrir une fois le clavier et récupérer un canal d'événements pour tout le loop
 	if err := keyboard.Open(); err != nil {
@@ -749,6 +752,7 @@ func RunGameLoop(currentMap string) {
 	}
 
 	for {
+		assignEnemyEmojis(currentMap, mapData)
 		printMap(mapData) // Le HUD est maintenant intégré dans printMap
 		fmt.Printf("📍 Salle actuelle: %s\n", currentMap)
 
@@ -793,6 +797,8 @@ func RunGameLoop(currentMap string) {
 		if transitionNeeded {
 			currentMap = newMap
 			mapData = copyMap(salles[currentMap])
+			currentMapDisplayName = currentMap
+			assignEnemyEmojis(currentMap, mapData)
 			applyEnemyStates(mapData, currentMap)
 
 			// Placer le joueur selon la transition

@@ -11,7 +11,7 @@ Votre mission : explorer les salles, collecter des pièces, fabriquer votre équ
 Vous incarnez un aventurier perdu dans un univers codé en **Go**.  
 Votre objectif :  
 - 🏛️ **Explorer** les différentes salles  
-- 💰 **Récupérer** des pièces pour améliorer votre équipement  
+- 💰 **Récupérer** des pièces et pour améliorer votre équipement  
 - ⚔️ **Combattre** des monstres pour progresser  
 - 🔮 **Collecter** les Runes du Destin  
 - 🕊️ **Libérer** les âmes prisonnières pour briser la malédiction  

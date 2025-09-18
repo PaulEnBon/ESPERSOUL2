@@ -199,6 +199,13 @@ func AfficherEffets(personnage *Personnage) {
 // Créer un effet personnalisé basé sur un type d'effet
 func CreerEffet(typeEffet string, puissance int) *Effet {
 	switch typeEffet {
+	case "Ivresse":
+		return &Effet{
+			Nom:             "Ivresse",
+			ToursRestants:   3,     // dure 3 tours
+			ChanceAppliquer: 1.0,   // toujours appliqué
+			ModifPrecision:  -0.30, // -30% précision
+		}
 	case "Guérison Poison":
 		return &Effet{
 			Nom:             "Guérison Poison",

@@ -217,10 +217,15 @@ func showDialogue(currentMap string, x, y int) {
 		return
 	}
 
-	// Dialogue normal pour les autres PNJ
+	// Dialogue normal / spécifique mentor
 	npcData, exists := npcDialogues[currentMap][key]
 	if !exists {
-		fmt.Println("👨 PNJ: Merci de m'avoir libéré !")
+		// Cas fallback: si c'est le mentor transformé mais dialogues non trouvés
+		if currentMap == "salle1" && key == "8_3" {
+			fmt.Println("🧙 Mentor Suprême: Merci de m'avoir libéré !")
+		} else {
+			fmt.Println("👨 PNJ: Merci de m'avoir libéré !")
+		}
 		fmt.Print("Appuyez sur une touche pour continuer...")
 		_ = readKey()
 		return
@@ -260,7 +265,11 @@ func showDialogue(currentMap string, x, y int) {
 
 	fmt.Println("\n💬 === DIALOGUE ===")
 	for i, line := range npcData.dialogues {
-		fmt.Printf("👨 PNJ: %s\n", line)
+		if currentMap == "salle1" && key == "8_3" {
+			fmt.Printf("🧙 Mentor Suprême: %s\n", line)
+		} else {
+			fmt.Printf("👨 PNJ: %s\n", line)
+		}
 		if i < len(npcData.dialogues)-1 {
 			fmt.Print("Appuyez sur une touche pour continuer...")
 			_ = readKey()
@@ -269,7 +278,11 @@ func showDialogue(currentMap string, x, y int) {
 
 	// Vérifier si la récompense a déjà été donnée
 	if rewardsGiven[currentMap][key] {
-		fmt.Printf("👨 PNJ: Je t'ai déjà donné ma récompense, mais merci encore!\n")
+		if currentMap == "salle1" && key == "8_3" {
+			fmt.Printf("🧙 Mentor Suprême: Je t'ai déjà remis ma récompense, mais merci encore !\n")
+		} else {
+			fmt.Printf("👨 PNJ: Je t'ai déjà donné ma récompense, mais merci encore!\n")
+		}
 	} else {
 		// Donner la récompense une seule fois
 		if npcData.reward != "" && npcData.amount > 0 {

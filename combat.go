@@ -9,6 +9,40 @@ import (
 	"github.com/eiannone/keyboard"
 )
 
+// Emoji par classe d'ennemi (affiché dans l'intro du combat)
+func emojiForEnemyName(name string) string {
+	switch name {
+	case "Rat":
+		return "🐀"
+	case "Gelée":
+		return "🟢"
+	case "Brigand":
+		return "🗡️"
+	case "Archer":
+		return "🏹"
+	case "Apprenti Pyro":
+		return "🔥"
+	case "Chevalier":
+		return "🛡️"
+	case "Berserker":
+		return "⚔️"
+	case "Mage Sombre":
+		return "🪄"
+	case "Seigneur Démon":
+		return "👿"
+	case "Archimage":
+		return "📜"
+	case "Champion déchu":
+		return "🥷"
+	case "Mentor Maudit":
+		return "🧙"
+	case "Mentor Suprême":
+		return "🎓"
+	default:
+		return "👾"
+	}
+}
+
 // ---- Récompenses configurables ----
 // Peut être déplacé dans un fichier de config plus tard.
 const (
@@ -45,50 +79,16 @@ func computeCoinLoot() (coins int, jackpot bool, breakdown string) {
 	return total, false, fmt.Sprintf("base=%d +legend=%d +puff=%d", base, legendaryBonus, puffBonus)
 }
 
-// Petits helpers d'emoji pour l'affichage des ennemis
-func emojiForEnemyName(name string) string {
-	switch name {
-	case "Rat":
-		return "🐀"
-	case "Gelée":
-		return "🟢"
-	case "Brigand":
-		return "🗡️"
-	case "Archer":
-		return "🏹"
-	case "Apprenti Pyro":
-		return "🔥"
-	case "Chevalier":
-		return "🛡️"
-	case "Berserker":
-		return "⚔️"
-	case "Mage Sombre":
-		return "🪄"
-	case "Seigneur Démon":
-		return "👿"
-	case "Archimage":
-		return "📜"
-	case "Champion déchu":
-		return "🥷"
-	default:
-		return "👾"
+// centralise l'affichage de la récompense en pièces pour éviter les doublons
+func printCoinReward(coins int, jackpot bool) {
+	if jackpot {
+		fmt.Printf("💎 JACKPOT ! Vous obtenez %d pièces !\n", coins)
+	} else {
+		fmt.Printf("✨ Vous avez reçu %d pièces.\n", coins)
 	}
 }
 
-func emojiForTier(t EnemyTier) string {
-	switch t {
-	case TierTutorial:
-		return "🟩"
-	case TierEarly:
-		return "🟦"
-	case TierMid:
-		return "🟧"
-	case TierLate:
-		return "🟥"
-	default:
-		return "⬜"
-	}
-}
+// (emojiForEnemyName restauré ici)
 
 // ——————————————————————————————————————————————————————————
 // Système de combat intégrant classes/armes/dégâts/effets/artefacts
@@ -258,7 +258,11 @@ func objectMenu(player, enemy *Personnage) bool {
 				heal := player.PVMax - player.PV
 				player.PV = player.PVMax
 				playerInventory["vodka_vitaly"]--
-				fmt.Printf("🍶 Vodka de Vitaly: +%d PV (PV: %d/%d) — Toute votre vie est régénérée !\n", heal, player.PV, player.PVMax)
+				// Applique le malus d'ivresse (-30% précision pendant 3 tours)
+				if eff := CreerEffet("Ivresse", 0); eff != nil {
+					AppliquerEffet(player, *eff)
+				}
+				fmt.Printf("🍶 Vodka de Vitaly: +%d PV (PV: %d/%d) — Toute votre vie est régénérée, mais votre précision chute temporairement !\n", heal, player.PV, player.PVMax)
 			} else {
 				fmt.Println("❌ Vous n'avez pas de Vodka de Vitaly !")
 			}
@@ -519,10 +523,11 @@ func combat(currentMap string, isSuper bool) interface{} {
 	}
 
 	fmt.Println("\n🗡️  COMBAT ENGAGÉ ! 🗡️")
+	enemyEmoji := emojiForEnemyName(enemy.Nom)
 	if isSuper {
-		fmt.Printf("Vous affrontez un ENNEMI SURPUISSANT: %s\n", enemy.Nom)
+		fmt.Printf("Vous affrontez %s %s (SURPUISSANT)\n", enemyEmoji, enemy.Nom)
 	} else {
-		fmt.Printf("Vous affrontez: %s\n", enemy.Nom)
+		fmt.Printf("Vous affrontez %s %s\n", enemyEmoji, enemy.Nom)
 	}
 
 	for player.PV > 0 && enemy.PV > 0 {
@@ -615,13 +620,9 @@ func combat(currentMap string, isSuper bool) interface{} {
 			if enemy.PV <= 0 {
 				fmt.Println("\n🎉 VICTOIRE ! Vous avez vaincu la créature !")
 				playerStats.enemiesKilled++
-				coins, jackpot, details := computeCoinLoot()
+				coins, jackpot, _ := computeCoinLoot()
 				addToInventory("pièces", coins)
-				if jackpot {
-					fmt.Printf("💎 JACKPOT ! Vous obtenez %d pièces (%s) !\n", coins, details)
-				} else {
-					fmt.Printf("✨ Vous avez reçu %d pièces (%s).\n", coins, details)
-				}
+				printCoinReward(coins, jackpot)
 				tier := tierForMap(currentMap)
 				rocks := 0
 				switch tier {
@@ -667,13 +668,9 @@ func combat(currentMap string, isSuper bool) interface{} {
 			// Incrémente le compteur d'ennemis tués (stat héritée)
 			playerStats.enemiesKilled++
 
-			coins, jackpot, details := computeCoinLoot()
+			coins, jackpot, _ := computeCoinLoot()
 			addToInventory("pièces", coins)
-			if jackpot {
-				fmt.Printf("💎 JACKPOT ! Vous obtenez %d pièces (%s) !\n", coins, details)
-			} else {
-				fmt.Printf("✨ Vous avez reçu %d pièces (%s).\n", coins, details)
-			}
+			printCoinReward(coins, jackpot)
 
 			// Drop de roches d'évolution selon la difficulté
 			tier := tierForMap(currentMap)
@@ -792,14 +789,10 @@ func combatWithAssignedType(currentMap string, isSuper bool, name string) interf
 		for _, t := range pool {
 			if t.Name == name {
 				enemy = NewEnemyFromTemplate(t, isSuper)
-				// Préfixer le nom comme dans CreateRandomEnemyForMap
-				typeEmoji := emojiForEnemyName(t.Name)
-				diffEmoji := emojiForTier(tier)
-				prefix := typeEmoji + " " + diffEmoji
+				// Ancien comportement: pas de préfixe de tier, éventuellement marqueur super
 				if isSuper {
-					prefix = "💀 " + prefix
+					enemy.Nom = "💀 " + enemy.Nom
 				}
-				enemy.Nom = prefix + " " + enemy.Nom
 				found = true
 				break
 			}
@@ -894,13 +887,9 @@ func combatWithAssignedType(currentMap string, isSuper bool, name string) interf
 			if enemy.PV <= 0 {
 				fmt.Println("\n🎉 VICTOIRE ! Vous avez vaincu la créature !")
 				playerStats.enemiesKilled++
-				coins, jackpot, details := computeCoinLoot()
+				coins, jackpot, _ := computeCoinLoot()
 				addToInventory("pièces", coins)
-				if jackpot {
-					fmt.Printf("💎 JACKPOT ! Vous obtenez %d pièces (%s) !\n", coins, details)
-				} else {
-					fmt.Printf("✨ Vous avez reçu %d pièces (%s).\n", coins, details)
-				}
+				printCoinReward(coins, jackpot)
 				tier := tierForMap(currentMap)
 				rocks := 0
 				switch tier {
@@ -936,13 +925,9 @@ func combatWithAssignedType(currentMap string, isSuper bool, name string) interf
 		if enemy.PV <= 0 {
 			fmt.Println("\n🎉 VICTOIRE ! Vous avez vaincu la créature !")
 			playerStats.enemiesKilled++
-			coins, jackpot, details := computeCoinLoot()
+			coins, jackpot, _ := computeCoinLoot()
 			addToInventory("pièces", coins)
-			if jackpot {
-				fmt.Printf("💎 JACKPOT ! Vous obtenez %d pièces (%s) !\n", coins, details)
-			} else {
-				fmt.Printf("✨ Vous avez reçu %d pièces (%s).\n", coins, details)
-			}
+			printCoinReward(coins, jackpot)
 			tier := tierForMap(currentMap)
 			rocks := 0
 			switch tier {
