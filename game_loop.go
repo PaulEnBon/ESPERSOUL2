@@ -311,6 +311,10 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 		}
 
 		if result == "disappear" {
+			// Marquer instance persistante morte
+			if tempEnemyInstanceDuringCombat != nil {
+				tempEnemyInstanceDuringCombat.Alive = false
+			}
 			// Cas spécial: dans salle1 à (8,3) toujours transformer en PNJ
 			if currentMap == "salle1" && newX == 8 && newY == 3 {
 				enemiesDefeated[currentMap][enemyKey] = true
@@ -343,6 +347,9 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 				mapData[py][px] = 0
 				mapData[newY][newX] = 3
 				pnjTransformed[currentMap][enemyKey] = true
+				if tempEnemyInstanceDuringCombat != nil {
+					tempEnemyInstanceDuringCombat.Alive = false
+				}
 				if py != newY || px != newX {
 					mapData[py][px] = 1
 				} else {
@@ -360,6 +367,9 @@ func handleCellInteraction(cell int, currentMap string, newX, newY int, mapData 
 				mapData[py][px] = 0
 				mapData[newY][newX] = 1
 				addHUDMessage("✅ Ennemi vaincu. Passage dégagé.")
+				if tempEnemyInstanceDuringCombat != nil {
+					tempEnemyInstanceDuringCombat.Alive = false
+				}
 			}
 		} else {
 			addHUDMessage("⛔ Vous restez à votre position.")
@@ -856,6 +866,9 @@ func RunGameLoop(currentMap string) {
 	// Puis retirer les arbres déjà coupés (persistance)
 	applyCutTrees(currentMap, mapData)
 
+	// Générer / reroll les ennemis de la carte lors de l'entrée initiale
+	RerollEnemiesForMap(currentMap, mapData)
+
 	// Définir le nom d'affichage de la salle courante
 	currentMapDisplayName = displayNameFor(currentMap)
 
@@ -922,7 +935,8 @@ func RunGameLoop(currentMap string) {
 	mapDataGlobalRef = mapData
 
 	for {
-		assignEnemyEmojis(currentMap, mapData)
+		// (Ancien système d'emojis aléatoire conservé provisoirement le temps de la migration)
+		// assignEnemyEmojis(currentMap, mapData) // Désactivé car on utilise désormais les instances persistantes rerollées
 		printMap(mapData) // Le HUD est maintenant intégré dans printMap
 		fmt.Printf("📍 Salle actuelle: %s\n", displayNameFor(currentMap))
 
@@ -1031,7 +1045,8 @@ func RunGameLoop(currentMap string) {
 			applyDecorations(currentMap, mapData)
 			applyCutTrees(currentMap, mapData)
 			currentMapDisplayName = displayNameFor(currentMap)
-			assignEnemyEmojis(currentMap, mapData)
+			// Reroll complet des ennemis de la nouvelle carte
+			RerollEnemiesForMap(currentMap, mapData)
 			applyEnemyStates(mapData, currentMap)
 			currentMapGlobalRef = currentMap
 			mapDataGlobalRef = mapData

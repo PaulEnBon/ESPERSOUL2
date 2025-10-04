@@ -1,0 +1,357 @@
+{
+  "version": 1,
+  "slot": 1,
+  "when": "2025-10-04T11:05:39.1696542+02:00",
+  "player": {
+    "Nom": "Steeve",
+    "PV": 140,
+    "PVMax": 140,
+    "Armure": 34,
+    "ResistMag": 12,
+    "Precision": 1.67,
+    "TauxCritique": 0.15000000000000002,
+    "MultiplicateurCrit": 1.6,
+    "EffetsActifs": null,
+    "ArmesDisponibles": [
+      {
+        "Nom": "Épée en Bois",
+        "DegatsPhysiques": 12,
+        "DegatsMagiques": 0,
+        "Precision": 0.82,
+        "TauxCritique": 0.05,
+        "Durabilite": 35,
+        "Competences": [
+          {
+            "Nom": "Coup d'Apprenti",
+            "Description": "Un coup maladroit mais sans danger.",
+            "Degats": 10,
+            "CoutMana": 0,
+            "Type": "physique",
+            "TypeEffet": "",
+            "Puissance": 0
+          }
+        ]
+      },
+      {
+        "Nom": "Épée en Pierre",
+        "DegatsPhysiques": 18,
+        "DegatsMagiques": 0,
+        "Precision": 0.83,
+        "TauxCritique": 0.1,
+        "Durabilite": 55,
+        "Competences": [
+          {
+            "Nom": "Coup Solide",
+            "Description": "Un vrai outil de baston.",
+            "Degats": 15,
+            "CoutMana": 0,
+            "Type": "physique",
+            "TypeEffet": "",
+            "Puissance": 0
+          }
+        ]
+      },
+      {
+        "Nom": "Épée en Fer",
+        "DegatsPhysiques": 24,
+        "DegatsMagiques": 0,
+        "Precision": 0.84,
+        "TauxCritique": 0.15,
+        "Durabilite": 75,
+        "Competences": [
+          {
+            "Nom": "Tranchant Métallique",
+            "Description": "Un coup net et précis.",
+            "Degats": 21,
+            "CoutMana": 0,
+            "Type": "physique",
+            "TypeEffet": "",
+            "Puissance": 0
+          },
+          {
+            "Nom": "Entaille",
+            "Description": "Provoque un léger saignement.",
+            "Degats": 15,
+            "CoutMana": 2,
+            "Type": "physique",
+            "TypeEffet": "Saignement",
+            "Puissance": 1
+          }
+        ]
+      },
+      {
+        "Nom": "Épée en Or",
+        "DegatsPhysiques": 28,
+        "DegatsMagiques": 0,
+        "Precision": 0.85,
+        "TauxCritique": 0.25,
+        "Durabilite": 50,
+        "Competences": [
+          {
+            "Nom": "Frappe Brillante",
+            "Description": "Coup rapide avec chance critique accrue.",
+            "Degats": 24,
+            "CoutMana": 0,
+            "Type": "physique",
+            "TypeEffet": "",
+            "Puissance": 0
+          },
+          {
+            "Nom": "Taillade Dorée",
+            "Description": "Provoque un saignement modéré.",
+            "Degats": 20,
+            "CoutMana": 3,
+            "Type": "physique",
+            "TypeEffet": "Saignement",
+            "Puissance": 2
+          }
+        ]
+      },
+      {
+        "Nom": "Épée en Diamant",
+        "DegatsPhysiques": 35,
+        "DegatsMagiques": 0,
+        "Precision": 0.86,
+        "TauxCritique": 0.3,
+        "Durabilite": 100,
+        "Competences": [
+          {
+            "Nom": "Frappe de Maître",
+            "Description": "Attaque puissante et bien affûtée.",
+            "Degats": 30,
+            "CoutMana": 0,
+            "Type": "physique",
+            "TypeEffet": "",
+            "Puissance": 0
+          },
+          {
+            "Nom": "Lame Diamantée",
+            "Description": "Brise l'armure ennemie.",
+            "Degats": 25,
+            "CoutMana": 4,
+            "Type": "physique",
+            "TypeEffet": "Brise-Armure",
+            "Puissance": 3
+          },
+          {
+            "Nom": "Hémorragie",
+            "Description": "Saignement important.",
+            "Degats": 22,
+            "CoutMana": 5,
+            "Type": "physique",
+            "TypeEffet": "Saignement",
+            "Puissance": 3
+          }
+        ]
+      },
+      {
+        "Nom": "Épée en Netherite",
+        "DegatsPhysiques": 42,
+        "DegatsMagiques": 5,
+        "Precision": 0.87,
+        "TauxCritique": 0.35,
+        "Durabilite": 150,
+        "Competences": [
+          {
+            "Nom": "Coup Infernal",
+            "Description": "Frappe écrasante imprégnée d'énergie obscure.",
+            "Degats": 38,
+            "CoutMana": 0,
+            "Type": "physique",
+            "TypeEffet": "",
+            "Puissance": 0
+          },
+          {
+            "Nom": "Destruction d'Armure",
+            "Description": "Détruit l'armure ennemie.",
+            "Degats": 30,
+            "CoutMana": 6,
+            "Type": "physique",
+            "TypeEffet": "Brise-Armure",
+            "Puissance": 5
+          },
+          {
+            "Nom": "Saignée Mortelle",
+            "Description": "Hémorragie massive.",
+            "Degats": 28,
+            "CoutMana": 7,
+            "Type": "physique",
+            "TypeEffet": "Saignement",
+            "Puissance": 5
+          }
+        ]
+      }
+    ],
+    "ArmuresDisponibles": [
+      {
+        "Nom": "Armure de Recrue",
+        "Defense": 10,
+        "Resistance": 2,
+        "HP": 10
+      },
+      {
+        "Nom": "Cuirasse du Sergent",
+        "Defense": 17,
+        "Resistance": 5,
+        "HP": 20
+      },
+      {
+        "Nom": "Armure de Général",
+        "Defense": 25,
+        "Resistance": 8,
+        "HP": 35
+      },
+      {
+        "Nom": "Armure du Maréchal",
+        "Defense": 34,
+        "Resistance": 12,
+        "HP": 50
+      }
+    ],
+    "NiveauArme": 0,
+    "NiveauArmure": 0,
+    "Roches": 0,
+    "ArmeEquipee": {
+      "Nom": "Épée en Bois",
+      "DegatsPhysiques": 12,
+      "DegatsMagiques": 0,
+      "Precision": 0.82,
+      "TauxCritique": 0.05,
+      "Durabilite": 35,
+      "Competences": [
+        {
+          "Nom": "Coup d'Apprenti",
+          "Description": "Un coup maladroit mais sans danger.",
+          "Degats": 10,
+          "CoutMana": 0,
+          "Type": "physique",
+          "TypeEffet": "",
+          "Puissance": 0
+        }
+      ]
+    },
+    "ArmureEquipee": {
+      "Nom": "Armure de Recrue",
+      "Defense": 10,
+      "Resistance": 2,
+      "HP": 10
+    },
+    "ArtefactsEquipes": [
+      null,
+      null
+    ],
+    "ArtefactsPossedes": null
+  },
+  "playerInventory": {
+    "antidote": 0,
+    "bombe_givrante": 0,
+    "bombe_incendiaire": 0,
+    "clés": 0,
+    "clés_spéciales": 0,
+    "elixir_critique": 0,
+    "elixir_force": 0,
+    "elixir_vitesse": 0,
+    "grenade_fumigene": 0,
+    "hache": 0,
+    "parchemin_dispersion": 0,
+    "pièces": 0,
+    "potion_degats": 0,
+    "potion_majeure": 0,
+    "potion_mineure": 0,
+    "potion_supreme": 0,
+    "potions": 0,
+    "puff_9k": 0,
+    "sida": 0,
+    "vodka_vitaly": 0,
+    "épées": 0
+  },
+  "currentMap": "salle1",
+  "playerX": 8,
+  "playerY": 5,
+  "enemiesDefeated": {
+    "salle1": {},
+    "salle10": {},
+    "salle11": {},
+    "salle12": {},
+    "salle13": {},
+    "salle14": {},
+    "salle15": {},
+    "salle2": {},
+    "salle3": {},
+    "salle4": {},
+    "salle5": {},
+    "salle6": {},
+    "salle7": {},
+    "salle8": {},
+    "salle9": {}
+  },
+  "pnjTransformed": {
+    "salle1": {},
+    "salle10": {},
+    "salle11": {},
+    "salle12": {},
+    "salle13": {},
+    "salle14": {},
+    "salle15": {},
+    "salle2": {},
+    "salle3": {},
+    "salle4": {},
+    "salle5": {},
+    "salle6": {},
+    "salle7": {},
+    "salle8": {},
+    "salle9": {}
+  },
+  "rewardsGiven": {
+    "salle1": {},
+    "salle10": {},
+    "salle11": {},
+    "salle12": {},
+    "salle13": {},
+    "salle14": {},
+    "salle15": {},
+    "salle2": {},
+    "salle3": {},
+    "salle4": {},
+    "salle5": {},
+    "salle6": {},
+    "salle7": {},
+    "salle8": {},
+    "salle9": {}
+  },
+  "chestOpened": {},
+  "secretChests": {},
+  "stoneBroken": false,
+  "cutTrees": {},
+  "mapTrees": {},
+  "salle12": {
+    "DefeatedMini": {},
+    "Fragments": 0,
+    "SpawnerSpawn": false,
+    "BossDefeated": false
+  },
+  "bossRooms": {
+    "salle13": {
+      "DefeatedMini": {},
+      "Fragments": 0,
+      "SpawnerSpawn": false,
+      "BossDefeated": false
+    },
+    "salle14": {
+      "DefeatedMini": {},
+      "Fragments": 0,
+      "SpawnerSpawn": false,
+      "BossDefeated": false
+    },
+    "salle15": {
+      "DefeatedMini": {},
+      "Fragments": 0,
+      "SpawnerSpawn": false,
+      "BossDefeated": false
+    }
+  },
+  "randomMobsSalle10": null,
+  "superEnemyFlags": {
+    "salle10": {}
+  }
+}

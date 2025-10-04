@@ -166,9 +166,20 @@ func cellToSymbolAt(x, y, val int) string {
 		// Sinon rendu normal
 	}
 	if !useASCII && (val == 2 || val == 12) {
+		// Priorité: instance persistante
+		if enemiesByMap != nil {
+			if mm := enemiesByMap[activeMapName]; mm != nil {
+				if inst, ok := mm[fmt.Sprintf("%d,%d", x, y)]; ok && inst != nil && inst.Alive {
+					if inst.Emoji != "" {
+						return inst.Emoji
+					}
+				}
+			}
+		}
+		// Fallback ancien système (sera supprimé après migration complète)
 		if m := enemyDisplayedEmoji[activeMapName]; m != nil {
 			key := fmt.Sprintf("%d,%d", x, y)
-			if e, ok := m[key]; ok {
+			if e, ok := m[key]; ok && e != "" {
 				return e
 			}
 		}
@@ -177,67 +188,10 @@ func cellToSymbolAt(x, y, val int) string {
 }
 
 // Choisit aléatoirement un emoji d'ennemi compatible avec le tier de la carte
-func randomEnemyEmojiForMap(mapName string) string {
-	tier := tierForMap(mapName)
-	var pool []string
-	switch tier {
-	case TierTutorial:
-		pool = []string{"Rat", "Gelée"}
-	case TierEarly:
-		pool = []string{"Brigand", "Archer", "Apprenti Pyro", "Rat", "Gelée"}
-	case TierMid:
-		pool = []string{"Chevalier", "Berserker", "Mage Sombre"}
-	case TierLate:
-		pool = []string{"Seigneur Démon", "Archimage", "Champion déchu", "Mage Sombre"}
-	default:
-		pool = []string{"Rat"}
-	}
-	name := pool[rand.Intn(len(pool))]
-	// Local mini switch d'emoji (évite dépendance sur combat.go)
-	switch name {
-	case "Rat":
-		return "🐀"
-	case "Gelée":
-		return "🟢"
-	case "Brigand":
-		return "🗡️"
-	case "Archer":
-		return "🏹"
-	case "Apprenti Pyro":
-		return "🔥"
-	case "Chevalier":
-		return "🛡️"
-	case "Berserker":
-		return "⚔️"
-	case "Mage Sombre":
-		return "🧙"
-	case "Seigneur Démon":
-		return "👿"
-	case "Archimage":
-		return "📜"
-	case "Champion déchu":
-		return "🏆"
-	default:
-		return "👹"
-	}
-}
 
 // Assigne des emojis aux cases ennemies d'une carte si non déjà définis
-func assignEnemyEmojis(mapName string, mapData [][]int) {
-	if enemyDisplayedEmoji[mapName] == nil {
-		enemyDisplayedEmoji[mapName] = map[string]string{}
-	}
-	for y := range mapData {
-		for x := range mapData[y] {
-			if mapData[y][x] == 2 || mapData[y][x] == 12 { // ennemi ou super ennemi
-				key := fmt.Sprintf("%d,%d", x, y)
-				if _, exists := enemyDisplayedEmoji[mapName][key]; !exists {
-					enemyDisplayedEmoji[mapName][key] = randomEnemyEmojiForMap(mapName)
-				}
-			}
-		}
-	}
-}
+// assignEnemyEmojis obsolète avec le système EnemyInstance + reroll; fonction conservée vide pour compat compat éventuelle
+func assignEnemyEmojis(mapName string, mapData [][]int) {}
 
 // Helpers d'abréviation pour la colonne compétences
 func shortType(t string) string {

@@ -790,10 +790,19 @@ var combatCustomEnemyName string
 func combat(currentMap string, isSuper bool) interface{} {
 	// Crée les entités combat
 	player := buildPlayerCharacter()
-	enemy := CreateRandomEnemyForMap(currentMap, isSuper)
+	var enemy Personnage
+	if tempEnemyInstanceDuringCombat != nil {
+		// Utilise l'instance persistante (copie pour éviter de modifier le stockage global pendant le combat)
+		enemy = tempEnemyInstanceDuringCombat.Persona
+		if tempEnemyInstanceDuringCombat.Super {
+			isSuper = true
+		}
+	} else {
+		enemy = CreateRandomEnemyForMap(currentMap, isSuper)
+	}
 
 	// Boss final personnalisé pour salle15
-	if currentMap == "salle15" && combatCustomEnemyName == "" {
+	if currentMap == "salle15" && combatCustomEnemyName == "" && tempEnemyInstanceDuringCombat == nil {
 		// Définition explicite du boss final (ignorer le scaling générique ensuite)
 		custom := Personnage{
 			Nom:                "Mia Khalifa",
